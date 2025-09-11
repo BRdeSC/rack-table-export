@@ -1,0 +1,464 @@
+from flask import Flask, jsonify, request, Response, Blueprint
+from flask_cors import CORS
+import MySQLdb
+from functools import wraps
+import csv
+from io import StringIO, BytesIO
+import openpyxl
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
+from reportlab.lib import colors
+import os
+
+app = Flask(__name__)
+CORS(app)  # Habilita CORS para o React
+
+def get_db():
+    return MySQLdb.connect(
+        host=os.getenv('DB_HOST'),
+        user=os.getenv('DB_USER'),
+        passwd=os.getenv('DB_PASSWORD'),
+        db=os.getenv('DB_NAME'),
+        charset=os.getenv('DB_CHARSET', 'utf8'),
+        port=int(os.getenv('DB_PORT', 3306))
+    )
+
+def db_connection(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        db = get_db()
+        try:
+            return f(db, *args, **kwargs)
+        finally:
+            db.close()
+    return decorated_function
+
+# *****************************************************************************
+
+@app.route("/api/racks")
+@db_connection
+def get_racks(db):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    cursor.execute("""
+        SELECT 
+            r.id, r.name, r.height, r.row_name,
+            r.location_id, r.location_name,
+            r.asset_no, r.comment,
+            COUNT(DISTINCT rs.object_id) as object_count
+        FROM Rack r
+        LEFT JOIN RackSpace rs ON r.id = rs.rack_id
+        GROUP BY r.id
+        ORDER BY r.name
+    """)
+    
+    data = cursor.fetchall()
+    cursor.close()
+    return jsonify(data)
+
+# Rota para detalhes do rack - CORRIGIDA com RackSpace
+@app.route("/api/rack/<int:rack_id>")
+@db_connection
+def get_rack_detail(db, rack_id):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Informações do rack
+    cursor.execute("""
+        SELECT id, name, height, row_name, 
+               location_id, location_name, asset_no, comment
+        FROM Rack 
+        WHERE id = %s
+    """, (rack_id,))
+    
+    rack = cursor.fetchone()
+    
+    if not rack:
+        cursor.close()
+        return jsonify({"error": "Rack não encontrado"}), 404
+    
+    # Busca objetos no rack usando RackSpace
+    cursor.execute("""
+        SELECT 
+            o.id, o.name, o.objtype_id, o.asset_no,
+            o.has_problems, o.comment,
+            rs.unit_no, rs.atom, rs.state
+        FROM RackSpace rs
+        JOIN Object o ON rs.object_id = o.id
+        WHERE rs.rack_id = %s
+        ORDER BY rs.unit_no DESC
+    """, (rack_id,))
+    
+    objects = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify({
+        'rack': rack,
+        'objects': objects
+    })
+
+# *****************************************************************************
+
+# Rota para objetos
+@app.route("/api/objects")
+@db_connection
+def get_objects(db):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    cursor.execute("""
+        SELECT 
+            o.id, o.name, o.objtype_id, o.asset_no,
+            o.has_problems, o.comment,
+            GROUP_CONCAT(DISTINCT r.name) as rack_names,
+            GROUP_CONCAT(DISTINCT l.name) as location_names
+        FROM Object o
+        LEFT JOIN RackSpace rs ON o.id = rs.object_id
+        LEFT JOIN Rack r ON rs.rack_id = r.id
+        LEFT JOIN Location l ON r.location_id = l.id
+        GROUP BY o.id
+        ORDER BY o.name 
+        LIMIT 100
+    """)
+    
+    data = cursor.fetchall()
+    cursor.close()
+    return jsonify(data)
+
+@app.route("/api/objects/count")
+@db_connection
+def get_objects_count(db):
+    cursor = db.cursor()
+    
+    cursor.execute("""
+        SELECT COUNT(DISTINCT o.id) as unique_objects_count
+        FROM Object o
+    """)
+    
+    count = cursor.fetchone()[0]
+    cursor.close()
+    return jsonify({"unique_objects_count": count})
+
+
+# Rota para detalhes do objeto
+@app.route("/api/object/<int:object_id>")
+@db_connection
+def get_object_detail(db, object_id):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Informações básicas do objeto
+    cursor.execute("""
+        SELECT id, name, objtype_id, asset_no, 
+               has_problems, comment
+        FROM Object 
+        WHERE id = %s
+    """, (object_id,))
+    
+    obj = cursor.fetchone()
+    
+    if not obj:
+        cursor.close()
+        return jsonify({"error": "Objeto não encontrado"}), 404
+    
+    # Informações do rack
+    cursor.execute("""
+        SELECT 
+            r.id as rack_id, 
+            r.name as rack_name, 
+            rs.unit_no,
+            rs.atom,
+            rs.state
+        FROM RackSpace rs
+        JOIN Rack r ON rs.rack_id = r.id
+        WHERE rs.object_id = %s
+    """, (object_id,))
+    
+    rack_info = cursor.fetchone()
+    
+    # Atributos do objeto
+    cursor.execute("""
+        SELECT 
+    a.name as attribute_name, 
+    a.type as attribute_type,
+    COALESCE(av.string_value, av.uint_value, av.float_value) as attribute_value
+FROM AttributeValue av 
+JOIN Attribute a ON av.attr_id = a.id 
+WHERE av.object_id = %s
+    """, (object_id,))
+    
+    attributes = cursor.fetchall()
+    
+    # Portas de rede (se existirem)
+    ports = []
+    try:
+        cursor.execute("""
+            SELECT 
+                name as port_name,
+                type as port_type,
+                label as port_label
+            FROM Port 
+            WHERE object_id = %s
+            ORDER BY name
+        """, (object_id,))
+        ports = cursor.fetchall()
+    except MySQLdb.Error:
+        pass
+    
+    cursor.close()
+    
+    return jsonify({
+        'object': obj,
+        'rack': rack_info,
+        'attributes': attributes,
+        'ports': ports
+    })
+
+# Rota para buscar objetos por tipo
+@app.route("/api/objects/type/<int:objtype_id>")
+@db_connection
+def get_objects_by_type(db, objtype_id):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    cursor.execute("""
+        SELECT 
+            o.id, o.name, o.objtype_id, o.asset_no,
+            r.name as rack_name,
+            rs.unit_no as rack_unit,
+            l.name as location_name
+        FROM Object o
+        LEFT JOIN RackSpace rs ON o.id = rs.object_id
+        LEFT JOIN Rack r ON rs.rack_id = r.id
+        LEFT JOIN Location l ON r.location_id = l.id
+        WHERE o.objtype_id = %s
+        ORDER BY o.name
+    """, (objtype_id,))
+    
+    data = cursor.fetchall()
+    cursor.close()
+    return jsonify(data)
+
+# *****************************************************************************
+
+# Rota para buscar estatísticas
+@app.route("/api/stats")
+@db_connection
+def get_stats(db):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    stats = {}
+    
+    # Total de objetos
+    cursor.execute("SELECT COUNT(*) as count FROM Object")
+    stats['total_objects'] = cursor.fetchone()['count']
+    
+    # Total de racks
+    cursor.execute("SELECT COUNT(*) as count FROM Rack")
+    stats['total_racks'] = cursor.fetchone()['count']
+    
+    # Objetos por tipo
+    cursor.execute("""
+        SELECT objtype_id, COUNT(*) as count 
+        FROM Object 
+        GROUP BY objtype_id 
+        ORDER BY count DESC
+    """)
+    stats['objects_by_type'] = cursor.fetchall()
+    
+    # Racks com mais objetos
+    cursor.execute("""
+        SELECT r.name, COUNT(rs.object_id) as object_count
+        FROM Rack r
+        LEFT JOIN RackSpace rs ON r.id = rs.rack_id
+        GROUP BY r.id
+        ORDER BY object_count DESC
+        LIMIT 10
+    """)
+    stats['top_racks'] = cursor.fetchall()
+    
+    cursor.close()
+    return jsonify(stats)
+
+# ************************ROTAS PARA EXPORTAÇÃO*************************************
+
+#************Rota para exportar em csv ***********
+#*********** Exportar lista de equipamentos ******
+@app.route("/api/objects/export/csv")
+@db_connection
+def export_objects_csv(db):
+    cursor = db.cursor()
+    
+    # query para obter dados de todos os equipamentos
+    # use a mesma query da sua rota /api/objects para garantir a consistência
+    cursor.execute("""
+        SELECT 
+            o.id, o.name, o.objtype_id, o.asset_no,
+            r.name as rack_name,
+            l.name as location_name
+        FROM Object o
+        LEFT JOIN RackSpace rs ON o.id = rs.object_id
+        LEFT JOIN Rack r ON rs.rack_id = r.id
+        LEFT JOIN Location l ON r.location_id = l.id
+        GROUP BY o.id
+        ORDER BY o.name
+    """)
+    
+    data = cursor.fetchall()
+    
+    # preparar os dados para csv
+    si = StringIO()
+    cw = csv.writer(si)
+    
+    # cabeçalho das colunas
+    header = ["id", "nome", "tipo_id", "asset_no", "rack", "localizacao"]
+    cw.writerow(header)
+    
+    # escrever as linhas de dados
+    cw.writerows(data)
+    
+    output = si.getvalue()
+    si.close()
+    
+    # retornar a resposta com o arquivo csv
+    response = Response(output, mimetype="text/csv")
+    response.headers["Content-Disposition"] = "attachment; filename=equipamentos.csv"
+    
+    return response
+
+#************* Rota para exportar xlsx ***************
+#************* Lista de RAcks ************************
+@app.route("/api/racks/export/xlsx")
+@db_connection
+def export_racks_xlsx(db):
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT 
+            r.id, r.name, r.height, r.row_name,
+            r.location_name,
+            COUNT(DISTINCT rs.object_id) as object_count
+        FROM Rack r
+        LEFT JOIN RackSpace rs ON r.id = rs.rack_id
+        GROUP BY r.id
+        ORDER BY r.name
+    """)
+    data = cursor.fetchall()
+    
+    # Criar um novo arquivo Excel na memória
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Racks"
+    
+    # Adicionar cabeçalhos
+    headers = ["Nome", "Altura", "Linha", "Localizacao", "Equipamentos"]
+    ws.append(headers)
+    
+    # Adicionar os dados
+    for row in data:
+        ws.append(row)
+        
+    # Salvar o arquivo em um buffer na memória
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    # Retornar o arquivo como uma resposta HTTP
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment;filename=racks.xlsx"}
+    )
+
+#*************** Lista de Equipamentos *******************
+@app.route("/api/objects/export/xlsx")
+@db_connection
+def export_all_objects_xlsx(db):
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT 
+            o.id, o.name, o.objtype_id, o.asset_no,
+            GROUP_CONCAT(DISTINCT r.name) as rack_names,
+            GROUP_CONCAT(DISTINCT l.name) as location_names
+        FROM Object o
+        LEFT JOIN RackSpace rs ON o.id = rs.object_id
+        LEFT JOIN Rack r ON rs.rack_id = r.id
+        LEFT JOIN Location l ON r.location_id = l.id
+        GROUP BY o.id
+        ORDER BY o.name
+    """)
+    data = cursor.fetchall()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Equipamentos"
+    
+    headers = ["ID", "Nome", "Tipo", "Asset No.", "Racks", "Localizacoes"]
+    ws.append(headers)
+    
+    for row in data:
+        ws.append(row)
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment;filename=equipamentos.xlsx"}
+    )
+
+#************* Rota para exportar pdf ***************
+#************* Lista de equipamentos ****************
+
+@app.route("/api/objects/rack/<int:rack_id>/export/pdf")
+@db_connection
+def export_rack_objects_pdf(db, rack_id):
+    cursor = db.cursor()
+    
+    # Nome do rack
+    cursor.execute("SELECT name FROM Rack WHERE id = %s", (rack_id,))
+    rack_name = cursor.fetchone()[0]
+    
+    # Dados dos equipamentos
+    cursor.execute("""
+        SELECT 
+            o.id, o.name, o.objtype_id, o.asset_no,
+            rs.unit_no
+        FROM RackSpace rs
+        JOIN Object o ON rs.object_id = o.id
+        WHERE rs.rack_id = %s
+        ORDER BY rs.unit_no DESC
+    """, (rack_id,))
+    data = cursor.fetchall()
+    
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter)
+    
+    # Criar a tabela de dados
+    table_data = [["ID", "Nome", "Tipo", "Asset No.", "Unidade"]]
+    for row in data:
+        table_data.append(list(row))
+
+    table = Table(table_data)
+    
+    # Estilo da tabela
+    style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+        ('BOX', (0, 0), (-1, -1), 1, colors.black),
+    ])
+    table.setStyle(style)
+    
+    story = [table]
+    doc.build(story)
+    
+    buffer.seek(0)
+    
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment;filename={rack_name}_equipamentos.pdf"}
+    )
+
+
+# *****************************************************************************
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
