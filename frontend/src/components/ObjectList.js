@@ -28,9 +28,7 @@ function ObjectList({ onSelectObject }) {
     <div className="object-list">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Todos os equipamentos - {new Set(objects.map(obj => obj.id)).size}</h2>
-        <button onClick={() => window.location.href = "http://localhost:5000/api/objects/export/csv"}>
-          Exportar CSV
-        </button>
+        
         <button onClick={() => window.location.href = "http://localhost:5000/api/objects/export/xlsx"}>
           Exportar XLSX
         </button>

@@ -278,50 +278,6 @@ def get_stats(db):
 
 # ************************ROTAS PARA EXPORTAÇÃO*************************************
 
-#************Rota para exportar em csv ***********
-#*********** Exportar lista de equipamentos ******
-@app.route("/api/objects/export/csv")
-@db_connection
-def export_objects_csv(db):
-    cursor = db.cursor()
-    
-    # query para obter dados de todos os equipamentos
-    # use a mesma query da sua rota /api/objects para garantir a consistência
-    cursor.execute("""
-        SELECT 
-            o.id, o.name, o.objtype_id, o.asset_no,
-            r.name as rack_name,
-            l.name as location_name
-        FROM Object o
-        LEFT JOIN RackSpace rs ON o.id = rs.object_id
-        LEFT JOIN Rack r ON rs.rack_id = r.id
-        LEFT JOIN Location l ON r.location_id = l.id
-        GROUP BY o.id
-        ORDER BY o.name
-    """)
-    
-    data = cursor.fetchall()
-    
-    # preparar os dados para csv
-    si = StringIO()
-    cw = csv.writer(si)
-    
-    # cabeçalho das colunas
-    header = ["id", "nome", "tipo_id", "asset_no", "rack", "localizacao"]
-    cw.writerow(header)
-    
-    # escrever as linhas de dados
-    cw.writerows(data)
-    
-    output = si.getvalue()
-    si.close()
-    
-    # retornar a resposta com o arquivo csv
-    response = Response(output, mimetype="text/csv")
-    response.headers["Content-Disposition"] = "attachment; filename=equipamentos.csv"
-    
-    return response
-
 #************* Rota para exportar xlsx ***************
 #************* Lista de RAcks ************************
 @app.route("/api/racks/export/xlsx")

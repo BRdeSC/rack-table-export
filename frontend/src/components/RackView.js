@@ -78,11 +78,18 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
           ← Voltar para lista de racks
         </button>
         <button 
+          onClick={() => window.location.href = `http://localhost:5000/api/objects/rack/${rack.id}/export/xlsx`}
+          className="export-button"
+        >
+          Exportar XLSX
+        </button>
+
+        {/* <button 
           onClick={() => window.location.href = `http://localhost:5000/api/objects/rack/${rack.id}/export/pdf`}
           className="export-button"
         >
           Exportar PDF
-        </button>
+        </button>  */}
       </div>
       
       <div className="rack-header">
