@@ -22,7 +22,7 @@ def get_db():
         charset=os.getenv('DB_CHARSET', 'utf8'),
         port=int(os.getenv('DB_PORT', 3306))
     )
-
+    
 def db_connection(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -116,7 +116,6 @@ def get_objects(db):
         LEFT JOIN Location l ON r.location_id = l.id
         GROUP BY o.id
         ORDER BY o.name 
-        LIMIT 100
     """)
     
     data = cursor.fetchall()
