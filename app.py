@@ -9,6 +9,11 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 import os
+import openpyxl
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image
+
 
 app = Flask(__name__)
 CORS(app)  # Habilita CORS para o React
@@ -33,8 +38,8 @@ def db_connection(f):
             db.close()
     return decorated_function
 
-# *****************************************************************************
-
+# ***********ROTAS DAS APIs***********************************************
+# Rota para lista de racks
 @app.route("/api/racks")
 @db_connection
 def get_racks(db):
@@ -56,7 +61,7 @@ def get_racks(db):
     cursor.close()
     return jsonify(data)
 
-# Rota para detalhes do rack - CORRIGIDA com RackSpace
+# Rota para detalhes do rack
 @app.route("/api/rack/<int:rack_id>")
 @db_connection
 def get_rack_detail(db, rack_id):
@@ -276,17 +281,66 @@ def get_stats(db):
     return jsonify(stats)
 
 # ************************ROTAS PARA EXPORTAÇÃO*************************************
+#************************ Rota para exportar xlsx ***************
 
-#************* Rota para exportar xlsx ***************
-#************* Lista de RAcks ************************
+# Função para estilizar a tabela
+def apply_excel_styles(ws, title_text, headers, logo_path=None):
+    logo_height_px = 70
+    logo_width_px = 60
+    
+    # Inserir a logo
+    if logo_path:
+        img = Image(logo_path)
+        img.height = logo_height_px
+        img.width = logo_width_px
+        ws.add_image(img, 'A1')
+
+    # Definir a altura da linha 1 para acomodar a logo
+    ws.row_dimensions[1].height = logo_height_px * 0.75 # Conversão de pixels para pontos
+
+    # Título principal dinâmico
+    num_cols = len(headers)
+    end_col_letter = get_column_letter(num_cols)
+    ws.merge_cells(f'B1:{end_col_letter}1')
+    title_cell = ws['B1']
+    title_cell.value = title_text
+    title_cell.font = Font(bold=True, size=18)
+    title_cell.alignment = Alignment(horizontal='center', vertical='center')
+    
+    # Espaçamento
+    #ws.append([])
+    
+    # Cabeçalho da tabela
+    ws.append(headers)
+    
+    header_fill = PatternFill(start_color="0077BA", end_color="0077BA", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    thin_border = Border(left=Side(style='thin'), 
+                         right=Side(style='thin'), 
+                         top=Side(style='thin'), 
+                         bottom=Side(style='thin'))
+
+    header_row_index = ws.max_row
+    for cell in ws[header_row_index]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = thin_border
+        
+    # 6. Ajustar largura das colunas
+    for col_idx, header in enumerate(headers, 1):
+        ws.column_dimensions[get_column_letter(col_idx)].width = len(header) + 5
+
+
+# ************* Lista de RAcks ************************
 @app.route("/api/racks/export/xlsx")
 @db_connection
 def export_racks_xlsx(db):
     cursor = db.cursor()
     cursor.execute("""
         SELECT 
-            r.id, r.name, r.height, r.row_name,
-            r.location_name,
+            r.name, r.location_name, r.row_name, 
+            r.height,
             COUNT(DISTINCT rs.object_id) as object_count
         FROM Rack r
         LEFT JOIN RackSpace rs ON r.id = rs.rack_id
@@ -294,26 +348,25 @@ def export_racks_xlsx(db):
         ORDER BY r.name
     """)
     data = cursor.fetchall()
-    
-    # Criar um novo arquivo Excel na memória
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Racks"
-    
-    # Adicionar cabeçalhos
-    headers = ["Nome", "Altura", "Linha", "Localizacao", "Equipamentos"]
-    ws.append(headers)
-    
-    # Adicionar os dados
+
+    title = "Relatório de Racks"
+    logo_path = "logo-coids.png" 
+    headers = ["Rack", "Localizacao", "Linha", "Altura", "Equipamentos"]
+    apply_excel_styles(ws, title, headers, logo_path)
+
     for row in data:
         ws.append(row)
-        
-    # Salvar o arquivo em um buffer na memória
+        for cell in ws[ws.max_row]:
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
     buffer = BytesIO()
     wb.save(buffer)
     buffer.seek(0)
     
-    # Retornar o arquivo como uma resposta HTTP
     return Response(
         buffer.getvalue(),
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
