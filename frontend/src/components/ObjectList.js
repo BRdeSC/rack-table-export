@@ -36,10 +36,10 @@ function ObjectList({ onSelectObject }) {
       <table className="objects-table">
         <thead>
           <tr>
-            <th>Nome</th>
-            <th>Tipo</th>
+            <th>Nome</th>           
             <th>Localização</th>
             <th>Racks</th>
+            <th>Tipo</th>
             <th>Asset No.</th>
           </tr>
         </thead>
@@ -47,9 +47,9 @@ function ObjectList({ onSelectObject }) {
           {objects.map(obj => (
             <tr key={obj.id} onClick={() => onSelectObject(obj.id)}>
               <td>{obj.name}</td>
-              <td>Tipo {obj.objtype_id}</td>
               <td>{obj.location_names || 'N/A'}</td>
               <td>{obj.rack_names || 'N/A'}</td>
+              <td>Tipo {obj.objtype_id}</td>
               <td>{obj.asset_no || 'N/A'}</td>
             </tr>
           ))}

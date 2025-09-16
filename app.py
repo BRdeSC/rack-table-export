@@ -284,7 +284,7 @@ def get_stats(db):
 #************************ Rota para exportar xlsx ***************
 
 # Função para estilizar a tabela
-def apply_excel_styles(ws, title_text, headers, logo_path=None):
+def apply_excel_styles(ws, title_text, headers, data, logo_path=None):
     logo_height_px = 70
     logo_width_px = 60
     
@@ -296,13 +296,13 @@ def apply_excel_styles(ws, title_text, headers, logo_path=None):
         ws.add_image(img, 'A1')
 
     # Definir a altura da linha 1 para acomodar a logo
-    ws.row_dimensions[1].height = logo_height_px * 0.75 # Conversão de pixels para pontos
+    ws.row_dimensions[1].height = logo_height_px * 0.85
 
     # Título principal dinâmico
     num_cols = len(headers)
     end_col_letter = get_column_letter(num_cols)
-    ws.merge_cells(f'B1:{end_col_letter}1')
-    title_cell = ws['B1']
+    ws.merge_cells(f'A1:{end_col_letter}1')
+    title_cell = ws['A1']
     title_cell.value = title_text
     title_cell.font = Font(bold=True, size=18)
     title_cell.alignment = Alignment(horizontal='center', vertical='center')
@@ -327,12 +327,27 @@ def apply_excel_styles(ws, title_text, headers, logo_path=None):
         cell.alignment = Alignment(horizontal='center', vertical='center')
         cell.border = thin_border
         
-    # 6. Ajustar largura das colunas
-    for col_idx, header in enumerate(headers, 1):
-        ws.column_dimensions[get_column_letter(col_idx)].width = len(header) + 5
+    # Adicionar dados à tabela
+    for row in data:
+        ws.append(row)
+        for cell in ws[ws.max_row]:
+            cell.alignment = Alignment(horizontal='left', vertical='center')
+            cell.border = thin_border
+    
+    # Ajustar largura das colunas com base no conteúdo
+    for column in ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(cell.value)
+            except:
+                pass
+        adjusted_width = (max_length + 2)
+        ws.column_dimensions[column_letter].width = adjusted_width
 
-
-# ************* Lista de RAcks ************************
+# ************* Export Lista de RAcks ************************
 @app.route("/api/racks/export/xlsx")
 @db_connection
 def export_racks_xlsx(db):
@@ -356,12 +371,12 @@ def export_racks_xlsx(db):
     title = "Relatório de Racks"
     logo_path = "logo-coids.png" 
     headers = ["Rack", "Localizacao", "Linha", "Altura", "Equipamentos"]
-    apply_excel_styles(ws, title, headers, logo_path)
+    apply_excel_styles(ws, title, headers, data, logo_path)
 
-    for row in data:
-        ws.append(row)
-        for cell in ws[ws.max_row]:
-            cell.alignment = Alignment(horizontal='center', vertical='center')
+    # for row in data:
+    #     ws.append(row)
+    #     for cell in ws[ws.max_row]:
+    #         cell.alignment = Alignment(horizontal='center', vertical='center')
 
     buffer = BytesIO()
     wb.save(buffer)
@@ -373,16 +388,17 @@ def export_racks_xlsx(db):
         headers={"Content-Disposition": "attachment;filename=racks.xlsx"}
     )
 
-#*************** Lista de Equipamentos *******************
+#*************** Export Lista de Equipamentos *******************
 @app.route("/api/objects/export/xlsx")
 @db_connection
 def export_all_objects_xlsx(db):
     cursor = db.cursor()
     cursor.execute("""
         SELECT 
-            o.id, o.name, o.objtype_id, o.asset_no,
+            o.name, 
+            GROUP_CONCAT(DISTINCT l.name) as location_names,
             GROUP_CONCAT(DISTINCT r.name) as rack_names,
-            GROUP_CONCAT(DISTINCT l.name) as location_names
+            o.objtype_id, o.asset_no
         FROM Object o
         LEFT JOIN RackSpace rs ON o.id = rs.object_id
         LEFT JOIN Rack r ON rs.rack_id = r.id
@@ -396,11 +412,13 @@ def export_all_objects_xlsx(db):
     ws = wb.active
     ws.title = "Equipamentos"
     
-    headers = ["ID", "Nome", "Tipo", "Asset No.", "Racks", "Localizacoes"]
-    ws.append(headers)
+    title = "Relatório de todos os equipamentos"
+    logo_path = "logo-coids.png"
+    headers = ["Nome", "Localizacoes", "Racks", "Tipo", "Asset No."]
+    apply_excel_styles(ws, title, headers, data, logo_path)
     
-    for row in data:
-        ws.append(row)
+    # for row in data:
+    #     ws.append(row)
 
     buffer = BytesIO()
     wb.save(buffer)
