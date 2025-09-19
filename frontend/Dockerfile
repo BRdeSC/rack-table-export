@@ -17,8 +17,11 @@ RUN npm run build
 # Use uma imagem leve para servir os arquivos estáticos (Nginx)
 FROM nginx:alpine
 
+# copia a configuração customizada
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Copie a build do React para o diretório do Nginx
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /app/build /usr/share/nginx/html/rack
 
 # Expõe a porta que o Nginx usa
 EXPOSE 80
