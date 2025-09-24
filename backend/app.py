@@ -39,6 +39,63 @@ def db_connection(f):
     return decorated_function
 
 # ***********ROTAS DAS APIs***********************************************
+
+# Nova rota para listar todas as pessoas que são contatos de equipamentos
+@app.route("/api/contacts", methods=['GET'])
+@db_connection
+def get_contact_persons(db):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    query = """
+        SELECT 
+            DISTINCT av.string_value AS contact_name
+        FROM 
+            AttributeValue av
+        JOIN
+            Attribute a ON av.attr_id = a.id
+        WHERE
+            a.name = 'contact person'
+        ORDER BY 
+            contact_name
+    """
+    
+    cursor.execute(query)
+    
+    data = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify(data)
+
+# Rota para buscar equipamentos por nome de pessoa
+@app.route("/api/objects/by_person/<string:name>")
+@db_connection
+def get_objects_by_person(db, name):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    query = """
+        SELECT 
+            o.id, o.name, o.objtype_id, o.asset_no
+        FROM 
+            Object o
+        JOIN 
+            AttributeValue av ON o.id = av.object_id
+        JOIN
+            Attribute a ON av.attr_id = a.id
+        WHERE
+            a.name = 'contact person' AND av.string_value = %s
+        GROUP BY 
+            o.id
+        ORDER BY 
+            o.name
+    """
+    
+    cursor.execute(query, (name,))
+    
+    data = cursor.fetchall()
+    cursor.close()
+    
+    return jsonify(data)
+
 # Rota para lista de racks
 @app.route("/api/racks")
 @db_connection
