@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./RackList.css"
 
 function RackList({ onSelectRack }) {
   const [racks, setRacks] = useState([]);

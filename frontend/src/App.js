@@ -3,18 +3,22 @@ import RackView from "./components/RackView";
 import ObjectDetail from "./components/ObjectDetail";
 import RackList from "./components/RackList";
 import ObjectList from "./components/ObjectList";
+import ContactList from "./components/ContactList";
+import ContactDetail from "./components/ContactDetail";
 import "./App.css";
 
 function App() {
   const [view, setView] = useState("racks");
   const [selectedRack, setSelectedRack] = useState(null);
   const [selectedObject, setSelectedObject] = useState(null);
+  const [selectedContact, setSelectedContact] = useState(null);
 
   // Função para limpar todos os estados de seleção e mudar a view
   const handleNavClick = (newView) => {
     setView(newView);
     setSelectedRack(null);
     setSelectedObject(null);
+    setSelectedContact(null);
   };
 
   // Lógica para renderizar SOMENTE a página de detalhes do objeto
@@ -34,6 +38,24 @@ function App() {
     );
   }
 
+  // Lógica para renderizar SOMENTE a página de detalhes do contato
+  if (selectedContact) {
+    return (
+      <div className="app">
+        <header className="app-header">
+          <h1>Data Center Management System</h1>
+        </header>
+        <main className="app-main">
+          <ContactDetail 
+            contactName={selectedContact}
+            onBack={() => setSelectedContact(null)}
+            onSelectObject={setSelectedObject} // ← ADICIONE ESTA PROP
+          />
+        </main>
+      </div>
+    );
+  }
+
   // Lógica para renderizar as outras páginas
   return (
     <div className="app">
@@ -42,6 +64,7 @@ function App() {
         <nav>
           <button onClick={() => handleNavClick("racks")}>Lista de Racks</button>
           <button onClick={() => handleNavClick("objects")}>Todos os Equipamentos</button>
+          <button onClick={() => handleNavClick("contacts")}>Responsáveis por equipamentos</button>
         </nav>
       </header>
 
@@ -57,8 +80,12 @@ function App() {
           />
         )}
 
-        {view === "objects" && ( // Adicione a condição para o novo componente
+        {view === "objects" && (
           <ObjectList onSelectObject={setSelectedObject} />
+        )}
+
+        {view === "contacts" && (
+          <ContactList onSelectContact={setSelectedContact} />
         )}
       </main>
     </div>

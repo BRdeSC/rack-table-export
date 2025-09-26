@@ -1,0 +1,56 @@
+.rack-list h2 {
+  margin-bottom: 2rem;
+  color: #2c3e50;
+  font-weight: 300;
+  font-size: 1.5rem;
+}
+
+.racks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.rack-card {
+  background: white;
+  border: 1px solid #e1e8ed;
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.rack-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+  border-color: #3498db;
+}
+
+.rack-card h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.rack-card p {
+  color: #7f8c8d;
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.rack-list button {
+  background: #3498db;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  transition: background 0.3s ease;
+}
+
+.rack-list button:hover {
+  background: #2980b9;
+}

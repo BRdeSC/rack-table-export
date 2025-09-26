@@ -1,3 +1,27 @@
+# version: '3.8'
+
+# services:
+#   # Serviço do Backend (Flask)
+#   backend:
+#     build: ./backend
+#     ports:
+#       - "5000:5000"
+#     volumes:
+#       - ./backend:/app
+#     env_file:  
+#       - ./.env
+    
+
+#   # Serviço do Frontend (React)
+#   frontend:
+#     build: ./frontend
+#     ports:
+#       - "3000:80"
+#     volumes:
+#       - ./frontend:/app
+#     depends_on:
+#       - backend
+
 version: '3.8'
 
 services:
@@ -10,7 +34,6 @@ services:
       - ./backend:/app
     env_file:  
       - ./.env
-    
 
   # Serviço do Frontend (React)
   frontend:
@@ -22,16 +45,16 @@ services:
     depends_on:
       - backend
 
-#   # Serviço do Banco de Dados (MySQL)
-#   db:
-#     image: mysql:8.0
-#     environment:
-#       - MYSQL_ROOT_PASSWORD=foobarbaz
-#       - MYSQL_DATABASE=racktables
-#     ports:
-#       - "3307:3306"
-#     volumes:
-#       - db_data:/var/lib/mysql
+  # Serviço do Banco de Dados (MySQL)
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=foobarbaz
+      - MYSQL_DATABASE=racktables
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
 
-# volumes:
-#   db_data:
+volumes:
+  db_data:

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./RackView.css"
 
 function RackView({ rackId, onBack, onSelectObject, onError }) {
   const [rack, setRack] = useState(null);

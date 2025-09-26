@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./ObjectDetail.css"
 
 function ObjectDetail({ objectId, onBack }) {
   const [object, setObject] = useState(null);
@@ -26,7 +27,7 @@ function ObjectDetail({ objectId, onBack }) {
 
   return (
     <div className="object-detail">
-      <button onClick={onBack}>← Voltar</button>
+      <button onClick={onBack}>← Voltar para lista de equipamentos</button>
       <h2>{object.name}</h2>
       <p>ID: {object.id}</p>
       <p>Tipo: {object.objtype_id === 4 ? 'Servidor' : 'Equipamento de Rede'}</p>
