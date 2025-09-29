@@ -5,6 +5,7 @@ function ContactList({ onSelectContact }) {
   const [contacts, setContacts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [equipmentCounts, setEquipmentCounts] = useState({});
 
   useEffect(() => {
     const fetchContacts = async () => {
@@ -18,6 +19,21 @@ function ContactList({ onSelectContact }) {
         
         const data = await response.json();
         setContacts(data);
+
+        const counts = {};
+        for (const contact of data) {
+          const resp = await fetch(
+            `http://localhost:5000/api/objects/by_person/${encodeURIComponent(contact.contact_name)}`
+          );
+          if (resp.ok) {
+            const objs = await resp.json();
+            counts[contact.contact_name] = objs.length;
+          } else {
+            counts[contact.contact_name] = 0;
+          }
+        }
+        setEquipmentCounts(counts);
+
       } catch (err) {
         setError(err.message);
         console.error("Erro ao buscar contatos:", err);
@@ -60,12 +76,18 @@ function ContactList({ onSelectContact }) {
         <thead>
           <tr>
             <th>Nome</th>
+            <th>Total de equipamentos</th>
           </tr>
         </thead>
         <tbody>
           {contacts.map(cto => (
             <tr key={cto.id} onClick={() => handleContactClick(cto.contact_name)}>
               <td>{cto.contact_name}</td>
+              <td>
+                {equipmentCounts[cto.contact_name] !== undefined
+                  ? equipmentCounts[cto.contact_name]
+                  : "Carregando..."}
+              </td>
             </tr>
           ))}
         </tbody>
