@@ -5,6 +5,7 @@ import RackList from "./components/RackList";
 import ObjectList from "./components/ObjectList";
 import ContactList from "./components/ContactList";
 import ContactDetail from "./components/ContactDetail";
+import StatsPage from "./components/StatsPage";
 import "./App.css";
 
 function App() {
@@ -65,6 +66,7 @@ function App() {
           <button onClick={() => handleNavClick("racks")}>Lista de Racks</button>
           <button onClick={() => handleNavClick("objects")}>Todos os Equipamentos</button>
           <button onClick={() => handleNavClick("contacts")}>Responsáveis por equipamentos</button>
+          <button onClick={() => handleNavClick("stats")}>Estatísticas</button>
         </nav>
       </header>
 
@@ -86,6 +88,10 @@ function App() {
 
         {view === "contacts" && (
           <ContactList onSelectContact={setSelectedContact} />
+        )}
+
+        {view === "stats" && (
+          <StatsPage />
         )}
       </main>
     </div>
