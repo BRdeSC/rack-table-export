@@ -66,22 +66,5 @@
   background: #2980b9;
 }
 
-.contact-detail button {
-  background: #3498db;
-  color: white;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  margin-bottom: 1.5rem;
-  transition: background 0.3s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-}
 
-.contact-detail button:hover {
-  background: #2980b9;
-}
 

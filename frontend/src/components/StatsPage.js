@@ -1,77 +1,103 @@
-import React, { useEffect, useState } from "react";
-import { PieChart, Pie, Tooltip, Legend, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import React from 'react';
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AF19FF', '#FF0000'];
+const StatsPage = ({ stats, loading, error, onReload }) => {
+  if (loading) {
+    return (
+      <div className="stats-page">
+        <h2>Estatísticas Gerais</h2>
+        <div className="loading">Carregando estatísticas...</div>
+      </div>
+    );
+  }
 
-function StatsPage({ stats }) { // Recebe stats como prop do App.js
-  // O fetch foi movido para o App.js. Usamos useEffect para formatação interna se necessário, mas aqui só usamos a prop.
-  
-  if (!stats) return <div>Carregando estatísticas...</div>;
+  if (error) {
+    return (
+      <div className="stats-page">
+        <h2>Estatísticas Gerais</h2>
+        <div className="error">
+          <p>Erro: {error}</p>
+          <button onClick={onReload} className="btn">Tentar Novamente</button>
+        </div>
+      </div>
+    );
+  }
 
-  // Formata os dados para o gráfico de pizza (o App.js já fez o fetch, mas precisamos formatar)
-  const objectsByType = stats.objects_by_type.map(item => ({
-    name: `Tipo ${item.objtype_id}`,
-    value: item.count
-  }));
-  
-  // Formata os dados para o gráfico de barras
-  const topRacks = stats.top_racks.map(item => ({
-    name: item.name,
-    count: item.object_count
-  }));
+  if (!stats) {
+    return (
+      <div className="stats-page">
+        <h2>Estatísticas Gerais</h2>
+        <div className="no-data">
+          <p>Nenhum dado disponível</p>
+          <button onClick={onReload} className="btn">Carregar Dados</button>
+        </div>
+      </div>
+    );
+  }
 
+  // Prepara dados para exibição
+  const topTypes = stats.objects_by_type ? stats.objects_by_type.slice(0, 8) : [];
+  const topRacks = stats.top_racks ? stats.top_racks.slice(0, 8) : [];
 
   return (
     <div className="stats-page">
-      <h2>Estatísticas Gerais</h2>
-      <div className="stats-grid">
-        <div className="stat-card">
-          <h3>Total de Racks</h3>
-          <p>{stats.total_racks}</p>
-        </div>
-        <div className="stat-card">
-          <h3>Total de Equipamentos</h3>
-          <p>{stats.total_objects}</p>
-        </div>
+      <div className="stats-header">
+        <h2>Estatísticas Gerais - Página em teste e desenvolvimento da Api!</h2>
+        <button onClick={onReload} className="btn">Atualizar Dados</button>
       </div>
       
-      <div className="charts-container">
-        <div className="chart-item">
-          <h3>Equipamentos por Tipo</h3>
-          <PieChart width={400} height={300}>
-            <Pie
-              data={objectsByType}
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              fill="#8884d8"
-              dataKey="value"
-              nameKey="name"
-              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-            >
-              {objectsByType.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip />
-            <Legend />
-          </PieChart>
+      {/* Cards com totais */}
+      <div className="stats-cards">
+        <div className="stat-card">
+          <div className="stat-number">{stats.total_racks}</div>
+          <div className="stat-label">Total de Racks</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-number">{stats.total_objects}</div>
+          <div className="stat-label">Total de Equipamentos</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-number">{stats.objects_by_type ? stats.objects_by_type.length : 0}</div>
+          <div className="stat-label">Tipos Diferentes de Equipamentos</div>
+        </div>
+      </div>
 
-        <div className="chart-item">
-          <h3>Top 10 Racks com Mais Equipamentos</h3>
-          <BarChart width={500} height={300} data={topRacks}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
-            <YAxis />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="count" fill="#8884d8" name="Nº de Equipamentos" />
-          </BarChart>
+      {/* Gráfico simulado com CSS - Top Tipos */}
+      <div className="chart-section">
+        <h3>Distribuição por Tipo de Equipamento (Top 8)</h3>
+        <div className="bar-chart">
+          {topTypes.map((item, index) => {
+            const percentage = (item.count / stats.total_objects) * 100;
+            return (
+              <div key={item.objtype_id} className="bar-item">
+                <div className="bar-label">Tipo {item.objtype_id}</div>
+                <div className="bar-container">
+                  <div 
+                    className="bar-fill"
+                    style={{ width: `${percentage}%` }}
+                  ></div>
+                  <div className="bar-value">{item.count}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Lista de racks */}
+      <div className="racks-section">
+        <h3>Top Racks com Mais Equipamentos</h3>
+        <div className="racks-list">
+          {topRacks.map((rack, index) => (
+            <div key={rack.name} className="rack-item">
+              <span className="rack-rank">#{index + 1}</span>
+              <span className="rack-name">{rack.name}</span>
+              <span className="rack-count">{rack.object_count} equipamentos</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default StatsPage;

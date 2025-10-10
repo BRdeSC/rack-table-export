@@ -31,7 +31,7 @@ function ObjectList({ onSelectObject }) {
         <h2>Todos os equipamentos - {new Set(objects.map(obj => obj.id)).size}</h2>
         
         <button onClick={() => window.location.href = "http://localhost:5000/api/objects/export/xlsx"}>
-          Exportar XLSX
+          📊 Exportar XLSX
         </button>
       </div>
       <table className="objects-table">

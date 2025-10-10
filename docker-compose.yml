@@ -1,27 +1,3 @@
-# version: '3.8'
-
-# services:
-#   # Serviço do Backend (Flask)
-#   backend:
-#     build: ./backend
-#     ports:
-#       - "5000:5000"
-#     volumes:
-#       - ./backend:/app
-#     env_file:  
-#       - ./.env
-    
-
-#   # Serviço do Frontend (React)
-#   frontend:
-#     build: ./frontend
-#     ports:
-#       - "3000:80"
-#     volumes:
-#       - ./frontend:/app
-#     depends_on:
-#       - backend
-
 version: '3.8'
 
 services:

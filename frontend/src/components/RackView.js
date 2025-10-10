@@ -45,7 +45,46 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
   if (loading) return <div className="loading">Carregando rack...</div>;
   if (!rack) return <div>Rack não encontrado</div>;
 
-  // Criar slots vazios para o rack
+  // Processar objetos para calcular slots por equipamento
+  const equipmentMap = new Map();
+  
+  objects.forEach(obj => {
+    if (!equipmentMap.has(obj.id)) {
+      equipmentMap.set(obj.id, {
+        id: obj.id,
+        name: obj.name,
+        asset_no: obj.asset_no,
+        state: obj.state,
+        objtype_id: obj.objtype_id,
+        slots: new Set(),
+        atoms: new Set()
+      });
+    }
+    
+    const equipment = equipmentMap.get(obj.id);
+    equipment.slots.add(obj.unit_no);
+    equipment.atoms.add(obj.atom);
+  });
+
+  // Converter para array e calcular informações
+  const equipmentList = Array.from(equipmentMap.values()).map(equipment => {
+    const slots = Array.from(equipment.slots).sort((a, b) => a - b);
+    const minSlot = Math.min(...slots);
+    const maxSlot = Math.max(...slots);
+    const slotCount = slots.length;
+    
+    return {
+      ...equipment,
+      slots,
+      minSlot,
+      maxSlot,
+      slotCount,
+      slotRange: slotCount > 1 ? `${minSlot}-${maxSlot}U` : `${minSlot}U`,
+      atomPositions: Array.from(equipment.atoms).map(getAtomPosition).join(', ')
+    };
+  });
+
+  // Criar slots vazios para o rack (visualização original)
   const rackHeight = rack.height || 42;
   const rackSlots = Array.from({ length: rackHeight }, (_, i) => {
     const slotNumber = rackHeight - i;
@@ -59,38 +98,16 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
     };
   });
 
-  // Filtra a lista de objetos para remover duplicatas
-  const seenObjectIds = new Set();
-    const uniqueObjects = objects.filter(obj => {
-    if (seenObjectIds.has(obj.id)) {
-      return false; // Se o ID já foi visto, descarte
-    }
-    seenObjectIds.add(obj.id);
-    return true; // Se o ID é novo, mantenha-o
-  });
+  // Calcular slots vazios
+  const occupiedSlots = new Set(objects.map(obj => obj.unit_no));
+  const emptySlots = rackHeight - occupiedSlots.size;
 
   return (
     <div className="rack-view">
-      {/* <button className="back-button" onClick={onBack}>
-        ← Voltar para lista de racks
-      </button> */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <button className="back-button" onClick={onBack}>
           ← Voltar para lista de racks
         </button>
-        <button 
-          onClick={() => window.location.href = `http://localhost:5000/api/objects/rack/${rack.id}/export/xlsx`}
-          className="export-button"
-        >
-          Exportar XLSX
-        </button>
-
-        {/* <button 
-          onClick={() => window.location.href = `http://localhost:5000/api/objects/rack/${rack.id}/export/pdf`}
-          className="export-button"
-        >
-          Exportar PDF
-        </button>  */}
       </div>
       
       <div className="rack-header">
@@ -110,8 +127,11 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
           </div>
           <div className="info-item">
             <strong>Equipamentos</strong>
-            {/* <span>{objects.length} instalados</span>  */}
-            <span>{new Set(objects.map(obj => obj.id)).size} instalados</span>
+            <span>{equipmentList.length} instalados</span>
+          </div>
+          <div className="info-item">
+            <strong>Slots vazios</strong>
+            <span>{emptySlots}</span>
           </div>
         </div>
       </div>
@@ -150,47 +170,34 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
         </div>
       </div>
 
-      {objects.length > 0 && (
+      {equipmentList.length > 0 && (
         <div className="rack-objects-list">
-          {/* <h3>Lista de Equipamentos ({objects.length})</h3> */}
-          <h3>Lista de Equipamentos - {new Set(objects.map(obj => obj.id)).size}</h3>
+          <h3>Lista de Equipamentos - {equipmentList.length}</h3>
           <table className="objects-table">
             <thead>
               <tr>
-                <th>Unit</th>
+                <th>Slots</th>
                 <th>Nome</th>
                 <th>Asset</th>
                 <th>Posição</th>
                 <th>Estado</th>
                 <th>Tipo</th>
+                <th>Altura</th>
               </tr>
             </thead>
-            {/* <tbody>
-              {objects.map(obj => (
-                <tr key={obj.id} onClick={() => onSelectObject(obj.id)}>
-                  <td><strong>{obj.unit_no}U</strong></td>
-                  <td>{obj.name}</td>
-                  <td>{obj.asset_no || 'N/A'}</td>
-                  <td>{getAtomPosition(obj.atom)}</td>
-                  <td>{getStateBadge(obj.state)}</td>
-                  <td>Tipo {obj.objtype_id}</td>
-                </tr>
-              ))}
-            </tbody> */}
-
             <tbody>
-              {uniqueObjects.map(obj => (
-                <tr key={obj.id} onClick={() => onSelectObject(obj.id)}>
-                  <td><strong>{obj.unit_no}U</strong></td>
-                  <td>{obj.name}</td>
-                  <td>{obj.asset_no || 'N/A'}</td>
-                  <td>{getAtomPosition(obj.atom)}</td>
-                  <td>{getStateBadge(obj.state)}</td>
-                  <td>Tipo {obj.objtype_id}</td>
+              {equipmentList.map(equipment => (
+                <tr key={equipment.id} onClick={() => onSelectObject(equipment.id)}>
+                  <td><strong>{equipment.slotRange}</strong></td>
+                  <td>{equipment.name}</td>
+                  <td>{equipment.asset_no || 'N/A'}</td>
+                  <td>{equipment.atomPositions}</td>
+                  <td>{getStateBadge(equipment.state)}</td>
+                  <td>{equipment.objtype_id}</td>
+                  <td>{equipment.slotCount}U</td>
                 </tr>
               ))}
             </tbody>
-
           </table>
         </div>
       )}

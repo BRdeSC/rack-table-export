@@ -17,7 +17,7 @@
 .rack-frame {
   border: 3px solid #2c3e50;
   border-radius: 8px;
-  width: 420px; /* Largura aumentada */
+  width: 420px; 
   margin: 0 auto;
   background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
   overflow: hidden;
@@ -26,10 +26,10 @@
 }
 
 .rack-slot {
-  min-height: 70px; /* Altura mínima aumentada */
+  min-height: 70px; 
   border-bottom: 1px solid #dee2e6;
   display: flex;
-  align-items: stretch; /* Alterado para stretch */
+  align-items: stretch;
   padding: 0;
   transition: all 0.2s ease;
   position: relative;

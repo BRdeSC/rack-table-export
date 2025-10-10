@@ -69,7 +69,7 @@ function ContactList({ onSelectContact }) {
         <h2>Todos os contatos - {contacts.length} </h2>
 
         <button onClick={() => window.location.href = "http://localhost:5000/api/contacts/export/xlsx"}>
-          Exportar XLSX
+          📊 Exportar XLSX
         </button>
       </div>
       <table className="contacts-table">

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import RackView from "./components/RackView";
 import ObjectDetail from "./components/ObjectDetail";
 import RackList from "./components/RackList";
@@ -13,6 +13,59 @@ function App() {
   const [selectedRack, setSelectedRack] = useState(null);
   const [selectedObject, setSelectedObject] = useState(null);
   const [selectedContact, setSelectedContact] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Função para carregar estatísticas
+  const loadStats = async () => {
+    setLoadingStats(true);
+    setError(null);
+    try {
+      console.log("Carregando estatísticas...");
+      
+      // Use a URL correta baseada no seu ambiente
+      const apiUrl = process.env.NODE_ENV === 'development' 
+        ? 'http://localhost:5000/api/stats'  // URL do Flask em desenvolvimento
+        : '/api/stats';  // URL em produção
+      
+      console.log(`Tentando URL: ${apiUrl}`);
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Erro HTTP: ${response.status}`);
+      }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        throw new Error(`Resposta não é JSON: ${text.substring(0, 100)}`);
+      }
+      
+      const data = await response.json();
+      console.log("Dados recebidos:", data);
+      setStats(data);
+      
+    } catch (error) {
+      console.error("Erro ao carregar estatísticas:", error);
+      setError(error.message);
+      setStats(null);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Carrega estatísticas automaticamente quando a view muda para "stats"
+  useEffect(() => {
+    if (view === "stats") {
+      loadStats();
+    }
+  }, [view]);
 
   // Função para limpar todos os estados de seleção e mudar a view
   const handleNavClick = (newView) => {
@@ -20,6 +73,7 @@ function App() {
     setSelectedRack(null);
     setSelectedObject(null);
     setSelectedContact(null);
+    setError(null);
   };
 
   // Lógica para renderizar SOMENTE a página de detalhes do objeto
@@ -50,7 +104,7 @@ function App() {
           <ContactDetail 
             contactName={selectedContact}
             onBack={() => setSelectedContact(null)}
-            onSelectObject={setSelectedObject} // ← ADICIONE ESTA PROP
+            onSelectObject={setSelectedObject}
           />
         </main>
       </div>
@@ -60,7 +114,7 @@ function App() {
   // Lógica para renderizar as outras páginas
   return (
     <div className="app">
-       <header className="app-header">
+      <header className="app-header">
         <h1>Data Center Management System</h1>
         <nav>
           <button onClick={() => handleNavClick("racks")}>Lista de Racks</button>
@@ -91,7 +145,12 @@ function App() {
         )}
 
         {view === "stats" && (
-          <StatsPage />
+          <StatsPage 
+            stats={stats} 
+            loading={loadingStats} 
+            error={error}
+            onReload={loadStats} 
+          />
         )}
       </main>
     </div>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import "./ContactDetail.css"
 
 function ContactDetail({ contactName, onBack, onSelectObject }) {
   const [objects, setObjects] = useState([]);
@@ -28,11 +29,19 @@ function ContactDetail({ contactName, onBack, onSelectObject }) {
     }
   };
 
+  const handleExport = () => {
+  // Abre a exportação em uma nova aba
+    window.open(`http://localhost:5000/api/contacts/${encodeURIComponent(contactName)}/export/xlsx`, '_blank');
+  };
+
   if (loading) return <div className="loading">Carregando equipamentos de {contactName}...</div>;
 
   return (
     <div className="contact-detail">
       <button onClick={onBack}>← Voltar para lista de responsáveis</button>
+      <button onClick={handleExport} className="export-button">
+        📊 Exportar para Excel
+      </button>
       <h2>Equipamentos do responsável: {contactName}</h2>
       <p>Total de equipamentos: {objects.length}</p>
       
