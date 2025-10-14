@@ -81,7 +81,7 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>Data Center Management System</h1>
+          <h1>Data Center COIDS | SESUP</h1>
         </header>
         <main className="app-main">
           <ObjectDetail 
@@ -98,7 +98,7 @@ function App() {
     return (
       <div className="app">
         <header className="app-header">
-          <h1>Data Center Management System</h1>
+          <h1>Data Center COIDS | SESUP</h1>
         </header>
         <main className="app-main">
           <ContactDetail 
@@ -115,11 +115,11 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Data Center Management System</h1>
+        <h1>Data Center COIDS | SESUP</h1>
         <nav>
-          <button onClick={() => handleNavClick("racks")}>Lista de Racks</button>
-          <button onClick={() => handleNavClick("objects")}>Todos os Equipamentos</button>
-          <button onClick={() => handleNavClick("contacts")}>Responsáveis por equipamentos</button>
+          <button onClick={() => handleNavClick("racks")}>Racks</button>
+          <button onClick={() => handleNavClick("objects")}>Equipamentos</button>
+          <button onClick={() => handleNavClick("contacts")}>Responsáveis</button>
           <button onClick={() => handleNavClick("stats")}>Estatísticas</button>
         </nav>
       </header>
