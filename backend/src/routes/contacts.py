@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify
 import MySQLdb
 import hashlib
 from src.utils.database import db_connection
+from src.utils.object_types import get_object_type_name
 
 contacts_bp = Blueprint('contacts', __name__)
 
@@ -36,7 +37,7 @@ def get_contact_persons(db):
     
     return jsonify(data)
 
-# Rota para buscar equipamentos por nome de pessoa
+# Rota para buscar equipamentos por nome de pessoa (ATUALIZADA seguindo o padrão da API de objetos)
 @contacts_bp.route("/api/objects/by_person/<string:name>")
 @db_connection
 def get_objects_by_person(db, name):
@@ -44,7 +45,10 @@ def get_objects_by_person(db, name):
     
     query = """
         SELECT 
-            o.id, o.name, o.objtype_id, o.asset_no
+            o.id, 
+            o.name, 
+            o.objtype_id, 
+            o.asset_no
         FROM 
             Object o
         JOIN 
@@ -62,6 +66,12 @@ def get_objects_by_person(db, name):
     cursor.execute(query, (name,))
     
     data = cursor.fetchall()
+    
+    # ADICIONADO: Seguindo o mesmo padrão da API de objetos
+    # Adicionar nome do tipo a cada objeto
+    for obj in data:
+        obj['objtype_name'] = get_object_type_name(obj['objtype_id'])
+    
     cursor.close()
     
     return jsonify(data)

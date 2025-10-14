@@ -36,6 +36,7 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
       'A': { class: 'state-active', text: 'Ativo' },
       'U': { class: 'state-unknown', text: 'Desconhecido' },
       'D': { class: 'state-inactive', text: 'Desativado' },
+      'T': { class: 'state-active', text: 'Ativo' },
       '': { class: 'state-unknown', text: 'N/A' }
     };
     const stateInfo = states[state] || states[''];
@@ -56,6 +57,7 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
         asset_no: obj.asset_no,
         state: obj.state,
         objtype_id: obj.objtype_id,
+        objtype_name: obj.objtype_name,
         slots: new Set(),
         atoms: new Set()
       });
@@ -159,6 +161,9 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
                     <span className="slot-detail-item">
                       Pos: {getAtomPosition(slot.atom)}
                     </span>
+                    <span className="slot-detail-item">
+                      Tipo: {slot.object.objtype_name} 
+                    </span>
                   </div>
                   {getStateBadge(slot.state)}
                 </div>
@@ -179,8 +184,8 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
                 <th>Slots</th>
                 <th>Nome</th>
                 <th>Asset</th>
-                <th>Posição</th>
-                <th>Estado</th>
+                {/* <th>Posição</th> */}
+                {/* <th>Estado</th> */}
                 <th>Tipo</th>
                 <th>Altura</th>
               </tr>
@@ -191,9 +196,9 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
                   <td><strong>{equipment.slotRange}</strong></td>
                   <td>{equipment.name}</td>
                   <td>{equipment.asset_no || 'N/A'}</td>
-                  <td>{equipment.atomPositions}</td>
-                  <td>{getStateBadge(equipment.state)}</td>
-                  <td>{equipment.objtype_id}</td>
+                  {/* <td>{equipment.atomPositions}</td> */}
+                  {/* <td>{getStateBadge(equipment.state)}</td> */}
+                  <td>{equipment.objtype_name}</td>
                   <td>{equipment.slotCount}U</td>
                 </tr>
               ))}

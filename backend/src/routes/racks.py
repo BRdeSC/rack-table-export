@@ -27,7 +27,7 @@ def get_racks(db):
     cursor.close()
     return jsonify(data)
 
-# Rota para detalhes do rack
+# Rota para detalhes do rack - VERSÃO CORRIGIDA
 @racks_bp.route("/api/rack/<int:rack_id>")
 @db_connection
 def get_rack_detail(db, rack_id):
@@ -47,30 +47,31 @@ def get_rack_detail(db, rack_id):
         cursor.close()
         return jsonify({"error": "Rack não encontrado"}), 404
     
-    # Busca objetos no rack usando RackSpace
+    # Busca objetos no rack usando RackSpace (apenas equipamentos) - COLUNAS CORRETAS
     cursor.execute("""
         SELECT 
             o.id, o.name, o.objtype_id, o.asset_no,
             o.has_problems, o.comment,
-            rs.unit_no, rs.atom, rs.state
+            rs.unit_no, rs.atom, rs.state  -- rs.state existe, o.state não
         FROM RackSpace rs
         JOIN Object o ON rs.object_id = o.id
-        WHERE rs.rack_id = %s
+        WHERE rs.rack_id = %s 
+        AND o.objtype_id NOT IN (1560, 1561, 1562)  -- Exclui infraestrutura
         ORDER BY rs.unit_no DESC
     """, (rack_id,))
     
     objects_data = cursor.fetchall()
     
-    # Adicionar nome do tipo a cada objeto
-    objects = []
+    # Adicionar nome do tipo usando função importada
+    processed_objects = []
     for obj in objects_data:
-        obj_with_type = dict(obj)  # Converte para dict mutável
-        obj_with_type['objtype_name'] = get_object_type_name(obj['objtype_id'])
-        objects.append(obj_with_type)
+        processed_obj = dict(obj)
+        processed_obj['objtype_name'] = get_object_type_name(obj['objtype_id'])
+        processed_objects.append(processed_obj)
     
     cursor.close()
     
     return jsonify({
         'rack': rack,
-        'objects': objects
+        'objects': processed_objects
     })

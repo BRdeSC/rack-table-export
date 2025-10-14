@@ -57,7 +57,7 @@ function ContactDetail({ contactName, onBack, onSelectObject }) {
           {objects.map(obj => (
             <tr key={obj.id} onClick={() => handleObjectClick(obj.id)} style={{ cursor: 'pointer' }}>
               <td>{obj.name}</td>
-              <td>{obj.objtype_id === 4 ? 'Servidor' : 'Equipamento de Rede'}</td>
+              <td>{obj.objtype_name || 'N/A'}</td>
               <td>{obj.asset_no || 'N/A'}</td>
             </tr>
           ))}

@@ -50,7 +50,7 @@ function ObjectList({ onSelectObject }) {
               <td>{obj.name}</td>
               <td>{obj.location_names || 'N/A'}</td>
               <td>{obj.rack_names || 'N/A'}</td>
-              <td>Tipo {obj.objtype_id}</td>
+              <td>{obj.objtype_name}</td>
               <td>{obj.asset_no || 'N/A'}</td>
             </tr>
           ))}

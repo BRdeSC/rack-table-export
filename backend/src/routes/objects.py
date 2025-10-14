@@ -21,6 +21,7 @@ def get_objects(db):
         LEFT JOIN RackSpace rs ON o.id = rs.object_id
         LEFT JOIN Rack r ON rs.rack_id = r.id
         LEFT JOIN Location l ON r.location_id = l.id
+        WHERE o.objtype_id NOT IN (1560, 1561, 1562) 
         GROUP BY o.id
         ORDER BY o.name 
     """)
@@ -40,13 +41,14 @@ def get_objects_count(db):
     cursor = db.cursor()
     
     cursor.execute("""
-        SELECT COUNT(DISTINCT o.id) as unique_objects_count
+        SELECT COUNT(DISTINCT o.id) as unique_equipments_count
         FROM Object o
+        WHERE o.objtype_id NOT IN (1560, 1561, 1562)
     """)
     
     count = cursor.fetchone()[0]
     cursor.close()
-    return jsonify({"unique_objects_count": count})
+    return jsonify({"unique_equipments_count": count})
 
 
 # Rota para detalhes do objeto

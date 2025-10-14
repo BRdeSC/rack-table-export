@@ -1,6 +1,7 @@
 import React from 'react';
 
 const StatsPage = ({ stats, loading, error, onReload }) => {
+  console.log("Stats data:", stats);
   if (loading) {
     return (
       <div className="stats-page">
@@ -52,7 +53,7 @@ const StatsPage = ({ stats, loading, error, onReload }) => {
           <div className="stat-label">Total de Racks</div>
         </div>
         <div className="stat-card">
-          <div className="stat-number">{stats.total_objects}</div>
+          <div className="stat-number">{stats.total_equipments}</div>
           <div className="stat-label">Total de Equipamentos</div>
         </div>
         <div className="stat-card">
@@ -66,10 +67,10 @@ const StatsPage = ({ stats, loading, error, onReload }) => {
         <h3>Distribuição por Tipo de Equipamento (Top 8)</h3>
         <div className="bar-chart">
           {topTypes.map((item, index) => {
-            const percentage = (item.count / stats.total_objects) * 100;
+            const percentage = (item.count / stats.total_equipments) * 100;
             return (
               <div key={item.objtype_id} className="bar-item">
-                <div className="bar-label">Tipo {item.objtype_id}</div>
+                <div className="bar-label">{item.objtype_name}</div>
                 <div className="bar-container">
                   <div 
                     className="bar-fill"
