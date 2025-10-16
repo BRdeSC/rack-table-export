@@ -1,24 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { apiService } from '../services/api';
+import { useApi } from '../hooks/useApi';
 import "./RackView.css"
 
 function RackView({ rackId, onBack, onSelectObject, onError }) {
-  const [rack, setRack] = useState(null);
-  const [objects, setObjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { data: rackData, loading, error } = useApi(() => apiService.getRack(rackId), [rackId]);
 
-  useEffect(() => {
-    fetch(`http://localhost:5000/api/rack/${rackId}`)
-      .then(response => response.json())
-      .then(data => {
-        setRack(data.rack);
-        setObjects(data.objects || []);
-        setLoading(false);
-      })
-      .catch(error => {
-        onError("Erro ao carregar rack: " + error.message);
-        setLoading(false);
-      });
-  }, [rackId, onError]);
+  if (loading) return <div className="loading">Carregando rack...</div>;
+  if (error) {
+    onError?.(error);
+    return <div className="error">Erro ao carregar rack: {error}</div>;
+  }
+  if (!rackData?.rack) return <div>Rack não encontrado</div>;
+
+  const { rack, objects = [] } = rackData;
 
   const getAtomPosition = (atom) => {
     const positions = {
@@ -42,9 +37,6 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
     const stateInfo = states[state] || states[''];
     return <span className={`state-badge ${stateInfo.class}`}>{stateInfo.text}</span>;
   };
-
-  if (loading) return <div className="loading">Carregando rack...</div>;
-  if (!rack) return <div>Rack não encontrado</div>;
 
   // Processar objetos para calcular slots por equipamento
   const equipmentMap = new Map();
@@ -86,7 +78,7 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
     };
   });
 
-  // Criar slots vazios para o rack (visualização original)
+  // Criar slots vazios para o rack
   const rackHeight = rack.height || 42;
   const rackSlots = Array.from({ length: rackHeight }, (_, i) => {
     const slotNumber = rackHeight - i;
@@ -106,7 +98,7 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
 
   return (
     <div className="rack-view">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="rack-view-header">
         <button className="back-button" onClick={onBack}>
           ← Voltar para lista de racks
         </button>
@@ -158,9 +150,9 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
                     <span className="slot-detail-item">
                       Asset: {slot.object.asset_no || 'N/A'}
                     </span>
-                    <span className="slot-detail-item">
+                    {/* <span className="slot-detail-item">
                       Pos: {getAtomPosition(slot.atom)}
-                    </span>
+                    </span> */}
                     <span className="slot-detail-item">
                       Tipo: {slot.object.objtype_name} 
                     </span>
@@ -184,8 +176,6 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
                 <th>Slots</th>
                 <th>Nome</th>
                 <th>Asset</th>
-                {/* <th>Posição</th> */}
-                {/* <th>Estado</th> */}
                 <th>Tipo</th>
                 <th>Altura</th>
               </tr>
@@ -196,8 +186,6 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
                   <td><strong>{equipment.slotRange}</strong></td>
                   <td>{equipment.name}</td>
                   <td>{equipment.asset_no || 'N/A'}</td>
-                  {/* <td>{equipment.atomPositions}</td> */}
-                  {/* <td>{getStateBadge(equipment.state)}</td> */}
                   <td>{equipment.objtype_name}</td>
                   <td>{equipment.slotCount}U</td>
                 </tr>

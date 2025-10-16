@@ -1,27 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { apiService } from '../services/api';
+import { useApi } from '../hooks/useApi';
 import "./ContactDetail.css"
 
-function ContactDetail({ contactName, onBack, onSelectObject }) {
-  const [objects, setObjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch(`http://localhost:5000/api/objects/by_person/${encodeURIComponent(contactName)}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Erro na rede ou no servidor');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setObjects(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error("Erro ao carregar equipamentos do contato:", error);
-        setLoading(false);
-      });
-  }, [contactName]);
+function ContactDetail({ contactName, onBack, onSelectObject, onError }) {
+  const { data: objects, loading, error } = useApi(
+    () => apiService.getObjectsByPerson(contactName), 
+    [contactName]
+  );
 
   const handleObjectClick = (objectId) => {
     if (typeof onSelectObject === 'function') {
@@ -30,42 +16,54 @@ function ContactDetail({ contactName, onBack, onSelectObject }) {
   };
 
   const handleExport = () => {
-  // Abre a exportação em uma nova aba
-    window.open(`http://localhost:5000/api/contacts/${encodeURIComponent(contactName)}/export/xlsx`, '_blank');
+    window.open(apiService.exportContactXLSX(contactName), '_blank');
   };
 
   if (loading) return <div className="loading">Carregando equipamentos de {contactName}...</div>;
+  if (error) {
+    onError?.(error);
+    return <div className="error">Erro ao carregar equipamentos: {error}</div>;
+  }
 
   return (
     <div className="contact-detail">
-      <button onClick={onBack}>← Voltar para lista de responsáveis</button>
-      <button onClick={handleExport} className="export-button">
-        📊 Exportar para Excel
-      </button>
-      <h2>Equipamentos do responsável: {contactName}</h2>
-      <p>Total de equipamentos: {objects.length}</p>
+      <div className="contact-detail-header">
+        <button className="back-button" onClick={onBack}>
+          ← Voltar para lista de responsáveis
+        </button>
+        <button onClick={handleExport} className="export-button">
+          📊 Exportar para Excel
+        </button>
+      </div>
       
-      <table className="objects-table">
-        <thead>
-          <tr>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Asset No.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {objects.map(obj => (
-            <tr key={obj.id} onClick={() => handleObjectClick(obj.id)} style={{ cursor: 'pointer' }}>
-              <td>{obj.name}</td>
-              <td>{obj.objtype_name || 'N/A'}</td>
-              <td>{obj.asset_no || 'N/A'}</td>
+      <div className="contact-info">
+        <h2>Equipamentos do responsável: {contactName}</h2>
+        <p className="equipment-count">Total de equipamentos: {objects?.length || 0}</p>
+      </div>
+      
+      {objects && objects.length > 0 ? (
+        <table className="objects-table">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Tipo</th>
+              <th>Asset No.</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      
-      {objects.length === 0 && (
-        <p>Nenhum equipamento encontrado para este responsável.</p>
+          </thead>
+          <tbody>
+            {objects.map(obj => (
+              <tr key={obj.id} onClick={() => handleObjectClick(obj.id)} className="clickable-row">
+                <td>{obj.name}</td>
+                <td>{obj.objtype_name || 'N/A'}</td>
+                <td>{obj.asset_no || 'N/A'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <div className="no-data">
+          <p>Nenhum equipamento encontrado para este responsável.</p>
+        </div>
       )}
     </div>
   );

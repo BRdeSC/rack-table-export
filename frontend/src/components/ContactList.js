@@ -1,49 +1,40 @@
 import React, { useState, useEffect } from "react";
+import { apiService } from '../services/api';
+import { useApi } from '../hooks/useApi';
 import "./ContactList.css"
 
-function ContactList({ onSelectContact }) {
-  const [contacts, setContacts] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+function ContactList({ onSelectContact, onError }) {
+  const { data: contacts, loading, error } = useApi(() => apiService.getContacts());
   const [equipmentCounts, setEquipmentCounts] = useState({});
 
+  // Carregar contagens de equipamentos para cada contato
   useEffect(() => {
-    const fetchContacts = async () => {
+    const fetchEquipmentCounts = async () => {
+      if (!contacts) return;
+
+      const counts = {};
+      
       try {
-        setLoading(true);
-        const response = await fetch("http://localhost:5000/api/contacts");
+        await Promise.all(
+          contacts.map(async (contact) => {
+            try {
+              const objects = await apiService.getObjectsByPerson(contact.contact_name);
+              counts[contact.contact_name] = objects.length;
+            } catch (err) {
+              console.error(`Erro ao carregar equipamentos para ${contact.contact_name}:`, err);
+              counts[contact.contact_name] = 0;
+            }
+          })
+        );
         
-        if (!response.ok) {
-          throw new Error(`Erro HTTP: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setContacts(data);
-
-        const counts = {};
-        for (const contact of data) {
-          const resp = await fetch(
-            `http://localhost:5000/api/objects/by_person/${encodeURIComponent(contact.contact_name)}`
-          );
-          if (resp.ok) {
-            const objs = await resp.json();
-            counts[contact.contact_name] = objs.length;
-          } else {
-            counts[contact.contact_name] = 0;
-          }
-        }
         setEquipmentCounts(counts);
-
       } catch (err) {
-        setError(err.message);
-        console.error("Erro ao buscar contatos:", err);
-      } finally {
-        setLoading(false);
+        onError?.(`Erro ao carregar contagens de equipamentos: ${err.message}`);
       }
     };
 
-    fetchContacts();
-  }, []);
+    fetchEquipmentCounts();
+  }, [contacts, onError]);
 
   const handleContactClick = (contactName) => {
     if (typeof onSelectContact === 'function') {
@@ -51,24 +42,20 @@ function ContactList({ onSelectContact }) {
     }
   };
 
-  if (loading) {
-    return <div className="loading">Carregando responsáveis...</div>;
-  }
-
+  if (loading) return <div className="loading">Carregando responsáveis...</div>;
   if (error) {
+    onError?.(error);
     return <div className="error">Erro ao carregar responsáveis: {error}</div>;
   }
-
   if (!contacts || contacts.length === 0) {
     return <div className="no-data">Nenhum responsável encontrado.</div>;
   }
-  
+
   return (
     <div className="contact-list">
       <div className="contact-list-header">
-        <h2>Todos os contatos - {contacts.length} </h2>
-
-        <button onClick={() => window.location.href = "http://localhost:5000/api/contacts/export/xlsx"}>
+        <h2>Todos os contatos - {contacts.length}</h2>
+        <button onClick={() => window.location.href = apiService.exportContactsXLSX()}>
           📊 Exportar XLSX
         </button>
       </div>
@@ -80,12 +67,12 @@ function ContactList({ onSelectContact }) {
           </tr>
         </thead>
         <tbody>
-          {contacts.map(cto => (
-            <tr key={cto.id} onClick={() => handleContactClick(cto.contact_name)}>
-              <td>{cto.contact_name}</td>
+          {contacts.map(contact => (
+            <tr key={contact.id} onClick={() => handleContactClick(contact.contact_name)}>
+              <td>{contact.contact_name}</td>
               <td>
-                {equipmentCounts[cto.contact_name] !== undefined
-                  ? equipmentCounts[cto.contact_name]
+                {equipmentCounts[contact.contact_name] !== undefined
+                  ? equipmentCounts[contact.contact_name]
                   : "Carregando..."}
               </td>
             </tr>

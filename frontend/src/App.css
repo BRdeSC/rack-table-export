@@ -417,3 +417,19 @@ body {
   background: #ffe6e6;
   border-left: 4px solid #ff4444;
 }
+
+/* Adicione no App.css */
+.app-header nav button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.app-header nav button {
+  transition: all 0.3s ease;
+}
+
+.app-header nav button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}

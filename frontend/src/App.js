@@ -1,3 +1,164 @@
+// import React, { useState, useEffect } from "react";
+// import RackView from "./components/RackView";
+// import ObjectDetail from "./components/ObjectDetail";
+// import RackList from "./components/RackList";
+// import ObjectList from "./components/ObjectList";
+// import ContactList from "./components/ContactList";
+// import ContactDetail from "./components/ContactDetail";
+// import StatsPage from "./components/StatsPage";
+// import "./App.css";
+
+// function App() {
+//   const [view, setView] = useState("racks");
+//   const [selectedRack, setSelectedRack] = useState(null);
+//   const [selectedObject, setSelectedObject] = useState(null);
+//   const [selectedContact, setSelectedContact] = useState(null);
+//   const [stats, setStats] = useState(null);
+//   const [loadingStats, setLoadingStats] = useState(false);
+//   const [error, setError] = useState(null);
+
+//   // Função para carregar estatísticas
+//   const loadStats = async () => {
+//     setLoadingStats(true);
+//     setError(null);
+//     try {
+//       console.log("Carregando estatísticas...");
+      
+//       // Use a URL correta baseada no seu ambiente
+//       const apiUrl = process.env.NODE_ENV === 'development' 
+//         ? 'http://localhost:5000/api/stats'  // URL do Flask em desenvolvimento
+//         : '/api/stats';  // URL em produção
+      
+//       console.log(`Tentando URL: ${apiUrl}`);
+      
+//       const response = await fetch(apiUrl, {
+//         headers: {
+//           'Accept': 'application/json',
+//         }
+//       });
+      
+//       if (!response.ok) {
+//         throw new Error(`Erro HTTP: ${response.status}`);
+//       }
+      
+//       const contentType = response.headers.get('content-type');
+//       if (!contentType || !contentType.includes('application/json')) {
+//         const text = await response.text();
+//         throw new Error(`Resposta não é JSON: ${text.substring(0, 100)}`);
+//       }
+      
+//       const data = await response.json();
+//       console.log("Dados recebidos:", data);
+//       setStats(data);
+      
+//     } catch (error) {
+//       console.error("Erro ao carregar estatísticas:", error);
+//       setError(error.message);
+//       setStats(null);
+//     } finally {
+//       setLoadingStats(false);
+//     }
+//   };
+
+//   // Carrega estatísticas automaticamente quando a view muda para "stats"
+//   useEffect(() => {
+//     if (view === "stats") {
+//       loadStats();
+//     }
+//   }, [view]);
+
+//   // Função para limpar todos os estados de seleção e mudar a view
+//   const handleNavClick = (newView) => {
+//     setView(newView);
+//     setSelectedRack(null);
+//     setSelectedObject(null);
+//     setSelectedContact(null);
+//     setError(null);
+//   };
+
+//   // Lógica para renderizar SOMENTE a página de detalhes do objeto
+//   if (selectedObject) {
+//     return (
+//       <div className="app">
+//         <header className="app-header">
+//           <h1>Data Center COIDS | SESUP</h1>
+//         </header>
+//         <main className="app-main">
+//           <ObjectDetail 
+//             objectId={selectedObject}
+//             onBack={() => setSelectedObject(null)}
+//           />
+//         </main>
+//       </div>
+//     );
+//   }
+
+//   // Lógica para renderizar SOMENTE a página de detalhes do contato
+//   if (selectedContact) {
+//     return (
+//       <div className="app">
+//         <header className="app-header">
+//           <h1>Data Center COIDS | SESUP</h1>
+//         </header>
+//         <main className="app-main">
+//           <ContactDetail 
+//             contactName={selectedContact}
+//             onBack={() => setSelectedContact(null)}
+//             onSelectObject={setSelectedObject}
+//           />
+//         </main>
+//       </div>
+//     );
+//   }
+
+//   // Lógica para renderizar as outras páginas
+//   return (
+//     <div className="app">
+//       <header className="app-header">
+//         <h1>Data Center COIDS | SESUP</h1>
+//         <nav>
+//           <button onClick={() => handleNavClick("racks")}>Racks</button>
+//           <button onClick={() => handleNavClick("objects")}>Equipamentos</button>
+//           <button onClick={() => handleNavClick("contacts")}>Responsáveis</button>
+//           <button onClick={() => handleNavClick("stats")}>Estatísticas</button>
+//         </nav>
+//       </header>
+
+//       <main className="app-main">
+//         {view === "racks" && !selectedRack && (
+//           <RackList onSelectRack={setSelectedRack} />
+//         )}
+//         {view === "racks" && selectedRack && (
+//           <RackView 
+//             rackId={selectedRack} 
+//             onBack={() => setSelectedRack(null)}
+//             onSelectObject={setSelectedObject}
+//           />
+//         )}
+
+//         {view === "objects" && (
+//           <ObjectList onSelectObject={setSelectedObject} />
+//         )}
+
+//         {view === "contacts" && (
+//           <ContactList onSelectContact={setSelectedContact} />
+//         )}
+
+//         {view === "stats" && (
+//           <StatsPage 
+//             stats={stats} 
+//             loading={loadingStats} 
+//             error={error}
+//             onReload={loadStats} 
+//           />
+//         )}
+//       </main>
+//     </div>
+//   );
+// }
+
+// export default App;
+
 import React, { useState, useEffect } from "react";
 import RackView from "./components/RackView";
 import ObjectDetail from "./components/ObjectDetail";
@@ -6,6 +167,8 @@ import ObjectList from "./components/ObjectList";
 import ContactList from "./components/ContactList";
 import ContactDetail from "./components/ContactDetail";
 import StatsPage from "./components/StatsPage";
+import { apiService } from "./services/api";
+import { useApi } from "./hooks/useApi";
 import "./App.css";
 
 function App() {
@@ -13,59 +176,19 @@ function App() {
   const [selectedRack, setSelectedRack] = useState(null);
   const [selectedObject, setSelectedObject] = useState(null);
   const [selectedContact, setSelectedContact] = useState(null);
-  const [stats, setStats] = useState(null);
-  const [loadingStats, setLoadingStats] = useState(false);
-  const [error, setError] = useState(null);
 
-  // Função para carregar estatísticas
+  // Usando o hook personalizado para estatísticas
+  const { 
+    data: stats, 
+    loading: loadingStats, 
+    error: statsError, 
+    refetch: refetchStats 
+  } = useApi(() => apiService.getStats(), [view === "stats"]);
+
+  // Função para carregar estatísticas (mantida para compatibilidade)
   const loadStats = async () => {
-    setLoadingStats(true);
-    setError(null);
-    try {
-      console.log("Carregando estatísticas...");
-      
-      // Use a URL correta baseada no seu ambiente
-      const apiUrl = process.env.NODE_ENV === 'development' 
-        ? 'http://localhost:5000/api/stats'  // URL do Flask em desenvolvimento
-        : '/api/stats';  // URL em produção
-      
-      console.log(`Tentando URL: ${apiUrl}`);
-      
-      const response = await fetch(apiUrl, {
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Erro HTTP: ${response.status}`);
-      }
-      
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        const text = await response.text();
-        throw new Error(`Resposta não é JSON: ${text.substring(0, 100)}`);
-      }
-      
-      const data = await response.json();
-      console.log("Dados recebidos:", data);
-      setStats(data);
-      
-    } catch (error) {
-      console.error("Erro ao carregar estatísticas:", error);
-      setError(error.message);
-      setStats(null);
-    } finally {
-      setLoadingStats(false);
-    }
+    await refetchStats();
   };
-
-  // Carrega estatísticas automaticamente quando a view muda para "stats"
-  useEffect(() => {
-    if (view === "stats") {
-      loadStats();
-    }
-  }, [view]);
 
   // Função para limpar todos os estados de seleção e mudar a view
   const handleNavClick = (newView) => {
@@ -73,7 +196,12 @@ function App() {
     setSelectedRack(null);
     setSelectedObject(null);
     setSelectedContact(null);
-    setError(null);
+  };
+
+  // Função para tratar erros (pode ser passada para componentes filhos)
+  const handleError = (errorMessage) => {
+    console.error("Erro na aplicação:", errorMessage);
+    // Você pode adicionar aqui um sistema de notificação/toast
   };
 
   // Lógica para renderizar SOMENTE a página de detalhes do objeto
@@ -87,6 +215,7 @@ function App() {
           <ObjectDetail 
             objectId={selectedObject}
             onBack={() => setSelectedObject(null)}
+            onError={handleError}
           />
         </main>
       </div>
@@ -105,6 +234,7 @@ function App() {
             contactName={selectedContact}
             onBack={() => setSelectedContact(null)}
             onSelectObject={setSelectedObject}
+            onError={handleError}
           />
         </main>
       </div>
@@ -117,38 +247,68 @@ function App() {
       <header className="app-header">
         <h1>Data Center COIDS | SESUP</h1>
         <nav>
-          <button onClick={() => handleNavClick("racks")}>Racks</button>
-          <button onClick={() => handleNavClick("objects")}>Equipamentos</button>
-          <button onClick={() => handleNavClick("contacts")}>Responsáveis</button>
-          <button onClick={() => handleNavClick("stats")}>Estatísticas</button>
+          <button 
+            onClick={() => handleNavClick("racks")}
+            className={view === "racks" ? "active" : ""}
+          >
+            Racks
+          </button>
+          <button 
+            onClick={() => handleNavClick("objects")}
+            className={view === "objects" ? "active" : ""}
+          >
+            Equipamentos
+          </button>
+          <button 
+            onClick={() => handleNavClick("contacts")}
+            className={view === "contacts" ? "active" : ""}
+          >
+            Responsáveis
+          </button>
+          <button 
+            onClick={() => handleNavClick("stats")}
+            className={view === "stats" ? "active" : ""}
+          >
+            Estatísticas
+          </button>
         </nav>
       </header>
 
       <main className="app-main">
         {view === "racks" && !selectedRack && (
-          <RackList onSelectRack={setSelectedRack} />
+          <RackList 
+            onSelectRack={setSelectedRack}
+            onError={handleError}
+          />
         )}
         {view === "racks" && selectedRack && (
           <RackView 
             rackId={selectedRack} 
             onBack={() => setSelectedRack(null)}
             onSelectObject={setSelectedObject}
+            onError={handleError}
           />
         )}
 
         {view === "objects" && (
-          <ObjectList onSelectObject={setSelectedObject} />
+          <ObjectList 
+            onSelectObject={setSelectedObject}
+            onError={handleError}
+          />
         )}
 
         {view === "contacts" && (
-          <ContactList onSelectContact={setSelectedContact} />
+          <ContactList 
+            onSelectContact={setSelectedContact}
+            onError={handleError}
+          />
         )}
 
         {view === "stats" && (
           <StatsPage 
             stats={stats} 
             loading={loadingStats} 
-            error={error}
+            error={statsError}
             onReload={loadStats} 
           />
         )}

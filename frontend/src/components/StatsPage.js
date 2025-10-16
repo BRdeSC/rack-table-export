@@ -92,7 +92,7 @@ const StatsPage = ({ stats, loading, error, onReload }) => {
             <div key={rack.name} className="rack-item">
               <span className="rack-rank">#{index + 1}</span>
               <span className="rack-name">{rack.name}</span>
-              <span className="rack-count">{rack.object_count} equipamentos</span>
+              <span className="rack-count">{rack.equipment_count} equipamentos</span>
             </div>
           ))}
         </div>

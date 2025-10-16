@@ -1,36 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
+import { apiService } from '../services/api';
+import { useApi } from '../hooks/useApi';
 import "./ObjectList.css"
 
-function ObjectList({ onSelectObject }) {
-  const [objects, setObjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetch("http://localhost:5000/api/objects")
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Erro na rede ou no servidor');
-        }
-        return response.json();
-      })
-      .then(data => {
-        setObjects(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error("Erro ao carregar objetos:", error);
-        setLoading(false);
-      });
-  }, []);
+function ObjectList({ onSelectObject, onError }) {
+  const { data: objects, loading, error } = useApi(() => apiService.getObjects());
 
   if (loading) return <div className="loading">Carregando equipamentos...</div>;
+  if (error) {
+    onError?.(error);
+    return <div className="error">Erro ao carregar equipamentos: {error}</div>;
+  }
+
+  // Contar equipamentos únicos (remover duplicatas se houver)
+  const uniqueObjects = objects ? Array.from(new Map(objects.map(obj => [obj.id, obj])).values()) : [];
 
   return (
     <div className="object-list">
       <div className="object-list-header">
-        <h2>Todos os equipamentos - {new Set(objects.map(obj => obj.id)).size}</h2>
-        
-        <button onClick={() => window.location.href = "http://localhost:5000/api/objects/export/xlsx"}>
+        <h2>Todos os equipamentos - {uniqueObjects.length}</h2>
+        <button onClick={() => window.location.href = apiService.exportObjectsXLSX()}>
           📊 Exportar XLSX
         </button>
       </div>
@@ -45,7 +34,7 @@ function ObjectList({ onSelectObject }) {
           </tr>
         </thead>
         <tbody>
-          {objects.map(obj => (
+          {uniqueObjects.map(obj => (
             <tr key={obj.id} onClick={() => onSelectObject(obj.id)}>
               <td>{obj.name}</td>
               <td>{obj.location_names || 'N/A'}</td>
