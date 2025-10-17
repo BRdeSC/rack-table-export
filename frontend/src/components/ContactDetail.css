@@ -1,3 +1,10 @@
+.contact-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
 .contact-header {
   display: flex;
   justify-content: space-between;
@@ -40,4 +47,9 @@
 
 .contact-detail button:hover {
   background: #2980b9;
+}
+
+
+.contact-info h2 {
+  margin-bottom: 0.5em;
 }

@@ -1,4 +1,10 @@
 /* Tabela de equipamentos */
+.object-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
 
 .rack-objects-list {
   margin-top: 2rem;

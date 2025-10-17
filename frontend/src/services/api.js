@@ -1,10 +1,7 @@
-// src/services/api.js
-
 class ApiService {
   constructor() {
-    this.baseURL = process.env.NODE_ENV === 'development' 
-      ? 'http://localhost:5000/api'
-      : process.env.REACT_APP_API_URL || '/api'
+    // Use path relativo quando no Docker
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
   }
 
   async request(endpoint, options = {}) {

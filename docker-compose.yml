@@ -18,19 +18,20 @@ services:
       - "3000:80"
     volumes:
       - ./frontend:/app
+    environment:
+      - REACT_APP_API_URL=/api
     depends_on:
-      - backend
+      - backend  
 
   # Serviço do Banco de Dados (MySQL)
   db:
-    image: mysql:8.0
-    environment:
-      - MYSQL_ROOT_PASSWORD=foobarbaz
-      - MYSQL_DATABASE=racktables
-    ports:
-      - "3307:3306"
-    volumes:
-      - db_data:/var/lib/mysql
+  image: mysql:8.0
+  env_file:
+    - ./.env  # ← Seguro, pois .env não vai para o git
+  ports:
+    - "3307:3306"
+  volumes:
+    - db_data:/var/lib/mysql
 
 volumes:
   db_data:
