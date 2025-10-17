@@ -24,8 +24,8 @@ function ObjectDetail({ objectId, onBack, onError }) {
       <div className="object-header">
         <h2>{object.name}</h2>
         <div className="object-basic-info">
-          <p><strong>ID:</strong> {object.id}</p>
-          <p><strong>Tipo:</strong> {object.objtype_id === 4 ? 'Servidor' : 'Equipamento de Rede'}</p>
+          {/* <p><strong>ID:</strong> {object.id}</p> */}
+          <p><strong>Tipo:</strong> {object.objtype_name || 'N/A'}</p>
           <p><strong>Asset No:</strong> {object.asset_no || 'N/A'}</p>
         </div>
       </div>
