@@ -25,13 +25,13 @@ services:
 
   # Serviço do Banco de Dados (MySQL)
   db:
-  image: mysql:8.0
-  env_file:
-    - ./.env  # ← Seguro, pois .env não vai para o git
-  ports:
-    - "3307:3306"
-  volumes:
-    - db_data:/var/lib/mysql
+    image: mysql:8.0
+    env_file:
+      - ./.env  # ← Seguro, pois .env não vai para o git
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
 
 volumes:
   db_data:
