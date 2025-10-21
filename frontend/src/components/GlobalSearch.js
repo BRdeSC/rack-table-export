@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { apiService } from '../services/api';
 import './GlobalSearch.css';
 
 function GlobalSearch({ onSearchSelect }) {
@@ -30,8 +31,8 @@ function GlobalSearch({ onSearchSelect }) {
 
     setLoading(true);
     const delaySearch = setTimeout(() => {
-      fetch(`http://localhost:5000/api/search/global?q=${encodeURIComponent(searchTerm)}`)
-        .then(response => response.json())
+      
+      apiService.searchGlobal(searchTerm)
         .then(data => {
           setResults(data);
           setShowResults(true);

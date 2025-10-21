@@ -33,6 +33,31 @@ class ApiService {
     }
   }
 
+  // BUSCA GLOBAL - NOVO MÉTODO
+  async searchGlobal(query) {
+    return this.request(`/search/global?q=${encodeURIComponent(query)}`);
+  }
+
+  // Busca específica em equipamentos
+  async searchEquipments(query, filters = {}) {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (filters.type_id) params.append('type_id', filters.type_id);
+    if (filters.has_problems) params.append('has_problems', filters.has_problems);
+    if (filters.rack_id) params.append('rack_id', filters.rack_id);
+    
+    return this.request(`/search/equipments?${params.toString()}`);
+  }
+
+  // Busca específica em racks
+  async searchRacks(query, filters = {}) {
+    const params = new URLSearchParams();
+    if (query) params.append('q', query);
+    if (filters.location_id) params.append('location_id', filters.location_id);
+    
+    return this.request(`/search/racks?${params.toString()}`);
+  }
+
   // Racks
   async getRacks() {
     return this.request('/racks');
