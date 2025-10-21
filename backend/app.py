@@ -6,6 +6,7 @@ from src.routes.racks import racks_bp
 from src.routes.objects import objects_bp
 from src.routes.stats import stats_bp
 from src.routes.exports import exports_bp
+from src.routes.search import search_bp
 
 app = Flask(__name__)
 CORS(app)  # Habilita CORS para o React
@@ -16,6 +17,7 @@ app.register_blueprint(racks_bp)
 app.register_blueprint(objects_bp)
 app.register_blueprint(stats_bp)
 app.register_blueprint(exports_bp)
+app.register_blueprint(search_bp)
 
 
 if __name__ == "__main__":
