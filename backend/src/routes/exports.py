@@ -1,4 +1,4 @@
-from flask import Blueprint, Response
+from flask import Blueprint, Response, request
 import MySQLdb
 from src.utils.database import db_connection
 from src.utils.excel_utils import apply_excel_styles
@@ -46,6 +46,7 @@ def export_racks_xlsx(db):
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment;filename=racks.xlsx"}
     )
+
 
 # Export Lista de Equipamentos (ATUALIZADA COM objtype_name)
 @exports_bp.route("/api/objects/export/xlsx")
@@ -102,6 +103,7 @@ def export_all_objects_xlsx(db):
         headers={"Content-Disposition": "attachment;filename=equipamentos.xlsx"}
     )
 
+
 # Export Lista de responsáveis
 @exports_bp.route("/api/contacts/export/xlsx")
 @db_connection
@@ -144,6 +146,7 @@ def export_all_contacts_xlsx(db):
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment;filename=responsaveis.xlsx"}
     )
+
 
 # Export Lista de Equipamentos por Responsável 
 @exports_bp.route("/api/contacts/<string:contact_name>/export/xlsx")
@@ -205,6 +208,86 @@ def export_contact_equipment_xlsx(db, contact_name):
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment;filename=equipamentos_{contact_name}.xlsx"}
     )
+
+
+
+# Export Lista de Equipamentos Filtrados por Tipo
+@exports_bp.route("/api/search/equipments/export/xlsx")
+@db_connection
+def export_equipments_filtered_xlsx(db):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Obter parâmetros de filtro
+    objtype_id = request.args.get('type_id', '')
+    
+    # Construir query base
+    query = """
+        SELECT 
+            o.id,
+            o.name, 
+            GROUP_CONCAT(DISTINCT l.name) as location_names,
+            GROUP_CONCAT(DISTINCT r.name) as rack_names,
+            o.objtype_id, 
+            o.asset_no
+        FROM Object o
+        LEFT JOIN RackSpace rs ON o.id = rs.object_id
+        LEFT JOIN Rack r ON rs.rack_id = r.id
+        LEFT JOIN Location l ON r.location_id = l.id
+        WHERE o.objtype_id NOT IN (1560, 1561, 1562)
+    """
+    
+    params = []
+    
+    # Aplicar filtro de tipo se fornecido
+    if objtype_id:
+        query += " AND o.objtype_id = %s"
+        params.append(objtype_id)
+    
+    query += " GROUP BY o.id ORDER BY o.name"
+    
+    cursor.execute(query, params)
+    data = cursor.fetchall()
+
+    # Processar dados para incluir objtype_name
+    processed_data = []
+    for row in data:
+        objtype_name = get_object_type_name(row['objtype_id'])
+        processed_row = (
+            row['name'],
+            row['location_names'] or 'N/A',
+            row['rack_names'] or 'N/A',
+            objtype_name,
+            row['asset_no'] or 'N/A'
+        )
+        processed_data.append(processed_row)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Equipamentos"
+    
+    # Definir título baseado no filtro
+    if objtype_id:
+        type_name = get_object_type_name(int(objtype_id))
+        title = f"Relatório de Equipamentos - {type_name}"
+        filename = f"equipamentos_{type_name.lower().replace(' ', '_')}.xlsx"
+    else:
+        title = "Relatório de todos os equipamentos"
+        filename = "equipamentos.xlsx"
+    
+    logo_path = "logo-coids.png"
+    headers = ["Nome", "Localizacoes", "Racks", "Tipo", "Asset No."]
+    apply_excel_styles(ws, title, headers, processed_data, logo_path)
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment;filename={filename}"}
+    )
+
 
 # Exportar PDF - Lista de equipamentos por rack
 @exports_bp.route("/api/objects/rack/<int:rack_id>/export/pdf")
