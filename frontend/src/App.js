@@ -73,7 +73,7 @@ function App() {
   // Função para tratar erros (pode ser passada para componentes filhos)
   const handleError = (errorMessage) => {
     console.error("Erro na aplicação:", errorMessage);
-    // Você pode adicionar aqui um sistema de notificação/toast
+    // pode adicionar aqui um sistema de notificação/toast
   };
 
   // Lógica para renderizar SOMENTE a página de detalhes do objeto

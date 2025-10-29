@@ -3,7 +3,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem; /* Diminuído de 1.5rem para 0.5rem */
+  margin-bottom: 0.5rem; 
 }
 
 .rack-objects-list {

@@ -62,3 +62,91 @@
 .rack-list button:hover {
   background: #2980b9;
 }
+
+/* Filtro por Fileira */
+.row-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  flex-wrap: wrap;
+}
+
+.row-filter label {
+  font-weight: 500;
+  color: #495057;
+  white-space: nowrap;
+  margin-bottom: 0;
+}
+
+.row-filter select {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  min-width: 200px;
+  height: 36px;
+}
+
+.row-filter select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.clear-filter-btn {
+  padding: 8px 16px;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  white-space: nowrap;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.clear-filter-btn:hover {
+  background: #5a6268;
+}
+
+/* Mensagem de nenhum resultado */
+.no-results {
+  text-align: center;
+  padding: 40px;
+  color: #6c757d;
+  font-style: italic;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+/* Garantir espaçamento entre linhas quando quebrar */
+.row-filter {
+  row-gap: 10px;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .row-filter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .row-filter select {
+    min-width: auto;
+    width: 100%;
+  }
+  
+  .clear-filter-btn {
+    width: 100%;
+  }
+}
