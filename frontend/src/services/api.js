@@ -1,12 +1,12 @@
 class ApiService {
   constructor() {
     // Use path relativo quando no Docker
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://juazeiro.cptec.inpe.br/api';
   }
 
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
-    
+   console.log('url: ', url); 
     try {
       const response = await fetch(url, {
         headers: {
@@ -19,6 +19,7 @@ class ApiService {
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
+	console.log('HTTP: ', response); 
       }
 
       const contentType = response.headers.get('content-type');
@@ -29,6 +30,7 @@ class ApiService {
       return await response.text();
     } catch (error) {
       console.error(`API Error [${endpoint}]:`, error);
+      console.log('API Error: ', error); 
       throw error;
     }
   }

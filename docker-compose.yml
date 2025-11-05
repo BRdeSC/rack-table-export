@@ -1,7 +1,6 @@
 version: '3.8'
 
 services:
-  # Serviço do Backend (Flask)
   backend:
     build: ./backend
     ports:
@@ -11,7 +10,6 @@ services:
     env_file:  
       - ./.env
 
-  # Serviço do Frontend (React)
   frontend:
     build: ./frontend
     ports:
@@ -19,19 +17,7 @@ services:
     volumes:
       - ./frontend:/app
     environment:
-      - REACT_APP_API_URL=/api
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
     depends_on:
       - backend  
 
-  # Serviço do Banco de Dados (MySQL)
-  db:
-    image: mysql:8.0
-    env_file:
-      - ./.env  # ← Seguro, pois .env não vai para o git
-    ports:
-      - "3307:3306"
-    volumes:
-      - db_data:/var/lib/mysql
-
-volumes:
-  db_data:
