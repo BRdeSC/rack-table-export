@@ -42,7 +42,7 @@ const StatsPage = ({ stats, loading, error, onReload }) => {
   return (
     <div className="stats-page">
       <div className="stats-header">
-        <h2>Estatísticas Gerais - Página em teste e desenvolvimento da Api!</h2>
+        <h2>Estatísticas</h2>
         <button onClick={onReload} className="btn">Atualizar Dados</button>
       </div>
       
