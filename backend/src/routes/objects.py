@@ -59,7 +59,7 @@ def get_object_detail(db, object_id):
     
     # Informações básicas do objeto
     cursor.execute("""
-        SELECT id, name, objtype_id, asset_no, 
+        SELECT id, name, label, objtype_id, asset_no, 
                has_problems, comment
         FROM Object 
         WHERE id = %s

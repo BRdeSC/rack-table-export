@@ -25,8 +25,11 @@ function ObjectDetail({ objectId, onBack, onError }) {
         <h2>{object.name}</h2>
         <div className="object-basic-info">
           {/* <p><strong>ID:</strong> {object.id}</p> */}
-          <p><strong>Tipo:</strong> {object.objtype_name || 'N/A'}</p>
-          <p><strong>Asset No:</strong> {object.asset_no || 'N/A'}</p>
+          <p><strong>Object type:</strong> {object.objtype_name || 'N/A'}</p>
+          <p><strong>Visible label:</strong> {object.label || 'N/A'}</p>
+          <p><strong>Asset tag:</strong> {object.asset_no || 'N/A'}</p>
+          <p><strong>Has_problems:</strong> {object.has_problems || 'N/A'}</p>
+          <p><strong>Comments:</strong> {object.comment || 'N/A'}</p>
         </div>
       </div>
       
