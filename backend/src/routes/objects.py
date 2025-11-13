@@ -3,6 +3,41 @@ import MySQLdb
 from src.utils.database import db_connection
 from src.utils.object_types import get_object_type_name
 
+# Cache global para HW types (evita múltiplas queries ao banco)
+_hw_type_cache = None
+
+def get_hw_type_map(db):
+    """Busca todos os HW types do banco com cache"""
+    global _hw_type_cache
+    
+    # Se já temos cache, retorna
+    if _hw_type_cache is not None:
+        return _hw_type_cache
+    
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Buscar todos os HW types do Dictionary (chapter 11 = server models)
+    cursor.execute("""
+        SELECT dict_key, dict_value 
+        FROM Dictionary 
+        WHERE chapter_id = 11
+        ORDER BY dict_key
+    """)
+    
+    hw_types = cursor.fetchall()
+    cursor.close()
+    
+    # Criar mapeamento limpando o formato %GPASS%
+    hw_type_map = {}
+    for hw_type in hw_types:
+        clean_value = hw_type['dict_value'].replace('%GPASS%', ' ')
+        hw_type_map[str(hw_type['dict_key'])] = clean_value
+    
+    print(f"HW Types carregados: {len(hw_type_map)} modelos")
+    _hw_type_cache = hw_type_map
+    
+    return hw_type_map
+
 objects_bp = Blueprint('objects', __name__)
 
 # Rota para objetos
@@ -57,6 +92,9 @@ def get_objects_count(db):
 def get_object_detail(db, object_id):
     cursor = db.cursor(MySQLdb.cursors.DictCursor)
     
+    # Buscar mapeamento de HW types do banco
+    hw_type_map = get_hw_type_map(db)
+    
     # Informações básicas do objeto
     cursor.execute("""
         SELECT id, name, label, objtype_id, asset_no, 
@@ -92,17 +130,58 @@ def get_object_detail(db, object_id):
     # Atributos do objeto
     cursor.execute("""
         SELECT 
-    a.name as attribute_name, 
-    a.type as attribute_type,
-    COALESCE(av.string_value, av.uint_value, av.float_value) as attribute_value
-FROM AttributeValue av 
-JOIN Attribute a ON av.attr_id = a.id 
-WHERE av.object_id = %s
+            a.name as attribute_name, 
+            a.type as attribute_type,
+            COALESCE(av.string_value, av.uint_value, av.float_value) as attribute_value
+        FROM AttributeValue av 
+        JOIN Attribute a ON av.attr_id = a.id 
+        WHERE av.object_id = %s
     """, (object_id,))
     
     attributes = cursor.fetchall()
+
+    # Processar atributos específicos
+    processed_attributes = []
+    for attr in attributes:
+        # Format support contract expiration
+        if attr['attribute_name'] == 'support contract expiration' and attr['attribute_value']:
+            try:
+                from datetime import datetime, timezone
+                dt = datetime.fromtimestamp(int(attr['attribute_value']), tz=timezone.utc)
+                attr['attribute_value'] = dt.strftime('%Y-%m-%d') 
+            except:
+                pass
+        
+        # Format HW warranty expiration
+        elif attr['attribute_name'] == 'HW warranty expiration' and attr['attribute_value']:
+            try:
+                from datetime import datetime, timezone
+                dt = datetime.fromtimestamp(int(attr['attribute_value']), tz=timezone.utc)
+                attr['attribute_value'] = dt.strftime('%Y-%m-%d') 
+            except:
+                pass
+        
+        # Mapear HW type
+        elif attr['attribute_name'] == 'HW type' and attr['attribute_value']:
+            hw_type_map = get_hw_type_map(db)
+            original_value = attr['attribute_value']
+            mapped_value = hw_type_map.get(original_value, f"HW Type {original_value}")
+            attr['attribute_value'] = mapped_value
+        
+        # Mapear Hypervisor (NOVO)
+        elif attr['attribute_name'] == 'Hypervisor' and attr['attribute_value']:
+            hypervisor_map = {
+                '1501': 'Sim',
+                '1502': 'Não',
+                # Podemos adicionar mais conforme necessário
+            }
+            original_value = attr['attribute_value']
+            mapped_value = hypervisor_map.get(original_value, f"Hypervisor {original_value}")
+            attr['attribute_value'] = mapped_value
+
+        processed_attributes.append(attr)
     
-    # Portas de rede (se existirem)
+    # Portas de rede
     ports = []
     try:
         cursor.execute("""
@@ -123,7 +202,7 @@ WHERE av.object_id = %s
     return jsonify({
         'object': obj,
         'rack': rack_info,
-        'attributes': attributes,
+        'attributes': processed_attributes,
         'ports': ports
     })
 

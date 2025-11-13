@@ -1,4 +1,4 @@
-********* Object Detail *********
+/********* Object Detail *********/
 .object-detail {
   background: white;
   border-radius: 12px;
@@ -40,8 +40,20 @@
   padding-bottom: 0.5rem;
 }
 
-/* Tables */
-.attributes-table, .ports-table {
+/* Sections */
+.section {
+  margin-bottom: 2rem;
+}
+
+.section h3 {
+  margin-bottom: 0.5rem;
+  color: #333;
+  border-bottom: 2px solid #007bff;
+  padding-bottom: 0.25rem;
+}
+
+/* Todas as tabelas com visual consistente */
+.data-table, .attributes-table, .ports-table {
   width: 100%;
   border-collapse: collapse;
   margin: 1rem 0;
@@ -50,25 +62,72 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.attributes-table th, .ports-table th,
-.attributes-table td, .ports-table td {
+.data-table th, .attributes-table th, .ports-table th,
+.data-table td, .attributes-table td, .ports-table td {
   padding: 1rem;
   text-align: left;
   border: 1px solid #ecf0f1;
 }
 
-.attributes-table th, .ports-table th {
+.data-table th, .attributes-table th, .ports-table th {
   background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
   color: white;
   font-weight: 500;
 }
 
+.data-table tr:nth-child(even), 
 .attributes-table tr:nth-child(even), 
 .ports-table tr:nth-child(even) {
   background: #f8f9fa;
 }
 
+.data-table tr:hover, 
 .attributes-table tr:hover, 
 .ports-table tr:hover {
   background: #e3f2fd;
 }
+
+/* Células específicas para tabelas de dados */
+.label-cell {
+  font-weight: 600;
+  background: #f8f9fa;
+  width: 30%;
+  color: #2c3e50;
+}
+
+.value-cell {
+  background: white;
+}
+
+.comment-cell {
+  white-space: pre-line;
+  background: #f8f9fa;
+  padding: 12px;
+  color: #555;
+}
+
+/* Estados especiais */
+.no-data {
+  text-align: center;
+  color: #7f8c8d;
+  padding: 2rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.loading, .error {
+  text-align: center;
+  padding: 2rem;
+  font-size: 1.1rem;
+}
+
+.loading {
+  color: #3498db;
+}
+
+.error {
+  color: #e74c3c;
+  background: #fdf2f2;
+  border-radius: 8px;
+}
+

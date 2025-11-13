@@ -13,7 +13,7 @@ function ObjectDetail({ objectId, onBack, onError }) {
   }
   if (!objectData?.object) return <div>Equipamento não encontrado</div>;
 
-  const { object, attributes = [], ports = [] } = objectData;
+  const { object, attributes = [], ports = [], rack } = objectData;
 
   return (
     <div className="object-detail">
@@ -23,31 +23,53 @@ function ObjectDetail({ objectId, onBack, onError }) {
       
       <div className="object-header">
         <h2>{object.name}</h2>
-        <div className="object-basic-info">
-          {/* <p><strong>ID:</strong> {object.id}</p> */}
-          <p><strong>Object type:</strong> {object.objtype_name || 'N/A'}</p>
-          <p><strong>Visible label:</strong> {object.label || 'N/A'}</p>
-          <p><strong>Asset tag:</strong> {object.asset_no || 'N/A'}</p>
-          <p><strong>Has_problems:</strong> {object.has_problems || 'N/A'}</p>
-          <p><strong>Comments:</strong> {object.comment || 'N/A'}</p>
-        </div>
       </div>
-      
+
+      {/* Tabela de Resumo */}
+      <div className="section">
+        <h3>Resumo</h3>
+        <table className="data-table">
+          <tbody>
+            <tr>
+              <td className="label-cell"><strong>Common name:</strong></td>
+              <td className="value-cell">{object.name || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td className="label-cell"><strong>Object type:</strong></td>
+              <td className="value-cell">{object.objtype_name || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td className="label-cell"><strong>Visible label:</strong></td>
+              <td className="value-cell">{object.label || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td className="label-cell"><strong>Asset tag:</strong></td>
+              <td className="value-cell">{object.asset_no || 'N/A'}</td>
+            </tr>
+            <tr>
+              <td className="label-cell"><strong>Has problems:</strong></td>
+              <td className="value-cell">{object.has_problems || 'N/A'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Tabela de Atributos */}
       {attributes.length > 0 && (
-        <div className="attributes-section">
+        <div className="section">
           <h3>Atributos</h3>
-          <table className="attributes-table">
-            <thead>
+          <table className="data-table">
+            {/* <thead>
               <tr>
                 <th>Atributo</th>
                 <th>Valor</th>
               </tr>
-            </thead>
+            </thead> */}
             <tbody>
               {attributes.map((attr, index) => (
                 <tr key={index}>
-                  <td>{attr.attribute_name}</td>
-                  <td>{attr.attribute_value}</td>
+                  <td className="label-cell">{attr.attribute_name}</td>
+                  <td className="value-cell">{attr.attribute_value}</td>
                 </tr>
               ))}
             </tbody>
@@ -55,10 +77,29 @@ function ObjectDetail({ objectId, onBack, onError }) {
         </div>
       )}
 
+      {/* Tabela de Comentários */}
+      {object.comment && (
+        <div className="section">
+          <h3>Comentários</h3>
+          <table className="data-table">
+            <tbody>
+              <tr>
+                <td className="comment-cell">
+                  {object.comment.split('\n').map((line, index) => (
+                    <div key={index}>{line || <br />}</div>
+                  ))}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Tabela de Portas
       {ports.length > 0 && (
-        <div className="ports-section">
+        <div className="section">
           <h3>Portas de Rede</h3>
-          <table className="ports-table">
+          <table className="data-table">
             <thead>
               <tr>
                 <th>Nome</th>
@@ -79,9 +120,10 @@ function ObjectDetail({ objectId, onBack, onError }) {
             </tbody>
           </table>
         </div>
-      )}
+      )} */}
 
-      {attributes.length === 0 && ports.length === 0 && (
+      
+      {attributes.length === 0 && ports.length === 0 && !object.comment && !rack && (
         <div className="no-data">
           <p>Nenhum dado adicional disponível para este equipamento.</p>
         </div>
