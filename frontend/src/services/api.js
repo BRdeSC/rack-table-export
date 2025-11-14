@@ -69,8 +69,14 @@ class ApiService {
     return this.request(`/rack/${id}`);
   }
 
+  // Exportar lista de racks
   exportRacksXLSX() {
     return `${this.baseURL}/racks/export/xlsx`;
+  }
+
+   // Exportar equipamentos do rack
+  exportRackXLSX(rackId) {
+    return `${this.baseURL}/racks/${rackId}/export/xlsx`;
   }
 
   // Objects
@@ -86,6 +92,7 @@ class ApiService {
     return this.request(`/objects/by_person/${encodeURIComponent(personName)}`);
   }
 
+  // Exportar lista de equipamentos
   exportObjectsXLSX() {
     return `${this.baseURL}/objects/export/xlsx`;
   }

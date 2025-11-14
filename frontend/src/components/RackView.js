@@ -96,11 +96,21 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
   const occupiedSlots = new Set(objects.map(obj => obj.unit_no));
   const emptySlots = rackHeight - occupiedSlots.size;
 
+   // Função para exportar
+  const handleExport = () => {
+    window.location.href = apiService.exportRackXLSX(rackId);
+  };
+
   return (
     <div className="rack-view">
+
+      {/* HEADER UNIFICADO COM BOTÕES ALINHADOS */}
       <div className="rack-view-header">
         <button className="back-button" onClick={onBack}>
           ← Voltar para lista de racks
+        </button>
+        <button onClick={handleExport} className="export-button">
+          📊 Exportar XLSX
         </button>
       </div>
       

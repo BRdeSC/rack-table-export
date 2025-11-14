@@ -1,8 +1,8 @@
-from flask import Blueprint, Response, request
+from flask import Blueprint, Response, jsonify, request
 import MySQLdb
 from src.utils.database import db_connection
 from src.utils.excel_utils import apply_excel_styles
-from src.utils.object_types import get_object_type_name  # Importar a função
+from src.utils.object_types import get_object_type_name 
 from io import BytesIO
 import openpyxl
 from reportlab.lib.pagesizes import letter
@@ -48,11 +48,85 @@ def export_racks_xlsx(db):
     )
 
 
-# Export Lista de Equipamentos (ATUALIZADA COM objtype_name)
+# Export Lista de Equipamentos por Rack
+@exports_bp.route("/api/racks/<int:rack_id>/export/xlsx")
+@db_connection
+def export_rack_equipment_xlsx(db, rack_id):
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Buscar informações do rack
+    cursor.execute("SELECT name, location_name, row_name, height FROM Rack WHERE id = %s", (rack_id,))
+    rack_info = cursor.fetchone()
+    
+    if not rack_info:
+        return jsonify({"error": "Rack não encontrado"}), 404
+    
+    # Buscar equipamentos do rack
+    cursor.execute("""
+        SELECT 
+            o.id,
+            o.name,
+            o.objtype_id,
+            o.asset_no,
+            MIN(rs.unit_no) as start_unit,
+            MAX(rs.unit_no) as end_unit,
+            COUNT(DISTINCT rs.unit_no) as slot_count
+        FROM RackSpace rs
+        JOIN Object o ON rs.object_id = o.id
+        WHERE rs.rack_id = %s
+        GROUP BY o.id
+        ORDER BY MIN(rs.unit_no) DESC
+    """, (rack_id,))
+    
+    data = cursor.fetchall()
+
+    # Processar dados
+    processed_data = []
+    for row in data:
+        objtype_name = get_object_type_name(row['objtype_id'])
+        
+        # Calcular range de slots
+        if row['slot_count'] > 1:
+            slot_range = f"{row['start_unit']}-{row['end_unit']}U"
+        else:
+            slot_range = f"{row['start_unit']}U"
+        
+        processed_row = (
+            slot_range,
+            row['name'],
+            objtype_name,
+            row['asset_no'] or 'N/A',
+            row['slot_count']
+        )
+        processed_data.append(processed_row)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Equipamentos"
+    
+    title = f"Equipamentos do Rack: {rack_info['name']}"
+    logo_path = "logo-coids.png"
+    headers = ["Slots", "Nome", "Tipo", "Asset No.", "Altura (U)"]
+    apply_excel_styles(ws, title, headers, processed_data, logo_path)
+
+    buffer = BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+    
+    filename = f"rack_{rack_info['name'].lower().replace(' ', '_')}_equipamentos.xlsx"
+    
+    return Response(
+        buffer.getvalue(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment;filename={filename}"}
+    )
+
+
+# Export Lista de Equipamentos 
 @exports_bp.route("/api/objects/export/xlsx")
 @db_connection
 def export_all_objects_xlsx(db):
-    cursor = db.cursor(MySQLdb.cursors.DictCursor)  # Mudar para DictCursor
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)  
     cursor.execute("""
         SELECT 
             o.id,
@@ -293,7 +367,7 @@ def export_equipments_filtered_xlsx(db):
 @exports_bp.route("/api/objects/rack/<int:rack_id>/export/pdf")
 @db_connection
 def export_rack_objects_pdf(db, rack_id):
-    cursor = db.cursor(MySQLdb.cursors.DictCursor)  # Mudar para DictCursor
+    cursor = db.cursor(MySQLdb.cursors.DictCursor) 
     
     # Nome do rack
     cursor.execute("SELECT name FROM Rack WHERE id = %s", (rack_id,))
