@@ -1,7 +1,14 @@
 from flask import Blueprint, jsonify
 import MySQLdb
+import html
 from src.utils.database import db_connection
 from src.utils.object_types import get_object_type_name
+
+def decode_html_entities(text):
+    """Decodifica entidades HTML como &gt;, &lt;, &amp;, etc."""
+    if not text or not isinstance(text, str):
+        return text
+    return html.unescape(text)
 
 # Cache global para HW types (evita múltiplas queries ao banco)
 _hw_type_cache = None
@@ -245,7 +252,11 @@ def get_object_detail(db, object_id):
     except MySQLdb.Error:
         pass
     
-    cursor.close()
+        cursor.close()
+    
+    # Decodificar entidades HTML no comentário se existir
+    if obj.get('comment'):
+        obj['comment'] = decode_html_entities(obj['comment'])
     
     return jsonify({
         'object': obj,
