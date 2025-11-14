@@ -5,6 +5,7 @@ from src.utils.object_types import get_object_type_name
 
 # Cache global para HW types (evita múltiplas queries ao banco)
 _hw_type_cache = None
+_sw_type_cache = None
 
 def get_hw_type_map(db):
     """Busca todos os HW types do banco com cache"""
@@ -39,6 +40,46 @@ def get_hw_type_map(db):
     return hw_type_map
 
 objects_bp = Blueprint('objects', __name__)
+
+
+def get_sw_type_map(db):
+    """Busca todos os SW types do banco com cache - chapter_id 13"""
+    global _sw_type_cache
+    
+    if _sw_type_cache is not None:
+        return _sw_type_cache
+    
+    cursor = db.cursor(MySQLdb.cursors.DictCursor)
+    
+    # Buscar todos os SW types do Dictionary - chapter_id 13
+    cursor.execute("""
+        SELECT dict_key, dict_value 
+        FROM Dictionary 
+        WHERE chapter_id = 13
+        ORDER BY dict_key
+    """)
+    
+    sw_types = cursor.fetchall()
+    cursor.close()
+    
+    # Criar mapeamento limpando o formato %GSKIP%
+    sw_type_map = {}
+    for sw_type in sw_types:
+        original_value = sw_type['dict_value']
+        
+        # Processar o formato: 'Xen Hypervisor%GSKIP%XenServer 7.0'
+        if '%GSKIP%' in original_value:
+            clean_value = original_value.split('%GSKIP%')[-1]
+        else:
+            clean_value = original_value
+        
+        sw_type_map[str(sw_type['dict_key'])] = clean_value
+    
+    print(f"SW Types carregados: {len(sw_type_map)} modelos")
+    _sw_type_cache = sw_type_map
+    
+    return sw_type_map
+
 
 # Rota para objetos
 @objects_bp.route("/api/objects")
@@ -166,6 +207,13 @@ def get_object_detail(db, object_id):
             hw_type_map = get_hw_type_map(db)
             original_value = attr['attribute_value']
             mapped_value = hw_type_map.get(original_value, f"HW Type {original_value}")
+            attr['attribute_value'] = mapped_value
+
+        # Mapear SW type (NOVO) - seguindo o mesmo padrão
+        elif attr['attribute_name'] == 'SW type' and attr['attribute_value']:
+            sw_type_map = get_sw_type_map(db)
+            original_value = attr['attribute_value']
+            mapped_value = sw_type_map.get(original_value, f"SW Type {original_value}")
             attr['attribute_value'] = mapped_value
         
         # Mapear Hypervisor (NOVO)
