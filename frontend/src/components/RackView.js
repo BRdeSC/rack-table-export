@@ -130,6 +130,36 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
         </div>
       </div>
 
+      
+
+      {equipmentList.length > 0 && (
+        <div className="rack-objects-list">
+          <h3>Lista de Equipamentos - {equipmentList.length}</h3>
+          <table className="objects-table">
+            <thead>
+              <tr>
+                <th>Slots</th>
+                <th>Nome</th>
+                <th>Asset</th>
+                <th>Tipo</th>
+                <th>Altura</th>
+              </tr>
+            </thead>
+            <tbody>
+              {equipmentList.map(equipment => (
+                <tr key={equipment.id} onClick={() => onSelectObject(equipment.id)}>
+                  <td><strong>{equipment.slotRange}</strong></td>
+                  <td>{equipment.name}</td>
+                  <td>{equipment.asset_no || 'N/A'}</td>
+                  <td>{equipment.objtype_name}</td>
+                  <td>{equipment.slotCount}U</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div className="rack-visualization">
         <h3>Visualização do Rack ({rack.height}U)</h3>
         <div className="rack-frame">
@@ -167,34 +197,8 @@ function RackView({ rackId, onBack, onSelectObject, onError }) {
         </div>
       </div>
 
-      {equipmentList.length > 0 && (
-        <div className="rack-objects-list">
-          <h3>Lista de Equipamentos - {equipmentList.length}</h3>
-          <table className="objects-table">
-            <thead>
-              <tr>
-                <th>Slots</th>
-                <th>Nome</th>
-                <th>Asset</th>
-                <th>Tipo</th>
-                <th>Altura</th>
-              </tr>
-            </thead>
-            <tbody>
-              {equipmentList.map(equipment => (
-                <tr key={equipment.id} onClick={() => onSelectObject(equipment.id)}>
-                  <td><strong>{equipment.slotRange}</strong></td>
-                  <td>{equipment.name}</td>
-                  <td>{equipment.asset_no || 'N/A'}</td>
-                  <td>{equipment.objtype_name}</td>
-                  <td>{equipment.slotCount}U</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </div>
+
   );
 }
 
