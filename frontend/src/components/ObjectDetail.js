@@ -27,27 +27,27 @@ function ObjectDetail({ objectId, onBack, onError }) {
 
       {/* Tabela de Resumo */}
       <div className="section">
-        <h3>Resumo</h3>
+        <h3><strong>Resumo</strong></h3>
         <table className="data-table">
           <tbody>
             <tr>
-              <td className="label-cell"><strong>Common name:</strong></td>
+              <td className="label-cell">Common name:</td>
               <td className="value-cell">{object.name || 'N/A'}</td>
             </tr>
             <tr>
-              <td className="label-cell"><strong>Object type:</strong></td>
+              <td className="label-cell">Object type:</td>
               <td className="value-cell">{object.objtype_name || 'N/A'}</td>
             </tr>
             <tr>
-              <td className="label-cell"><strong>Visible label:</strong></td>
+              <td className="label-cell">Visible label:</td>
               <td className="value-cell">{object.label || 'N/A'}</td>
             </tr>
             <tr>
-              <td className="label-cell"><strong>Asset tag:</strong></td>
+              <td className="label-cell">Asset tag:</td>
               <td className="value-cell">{object.asset_no || 'N/A'}</td>
             </tr>
             <tr>
-              <td className="label-cell"><strong>Has problems:</strong></td>
+              <td className="label-cell">Has problems:</td>
               <td className="value-cell">{object.has_problems || 'N/A'}</td>
             </tr>
           </tbody>
@@ -57,7 +57,7 @@ function ObjectDetail({ objectId, onBack, onError }) {
       {/* Tabela de Atributos */}
       {attributes.length > 0 && (
         <div className="section">
-          <h3>Atributos</h3>
+          <h3><strong>Atributos</strong></h3>
           <table className="data-table">
             {/* <thead>
               <tr>
@@ -80,7 +80,7 @@ function ObjectDetail({ objectId, onBack, onError }) {
       {/* Tabela de Comentários */}
       {object.comment && (
         <div className="section">
-          <h3>Comentários</h3>
+          <h3><strong>Comentários</strong></h3>
           <table className="data-table">
             <tbody>
               <tr>
@@ -98,7 +98,7 @@ function ObjectDetail({ objectId, onBack, onError }) {
       {/* Tabela de Portas
       {ports.length > 0 && (
         <div className="section">
-          <h3>Portas de Rede</h3>
+          <h3><strong>Portas de Rede</strong></h3>
           <table className="data-table">
             <thead>
               <tr>
