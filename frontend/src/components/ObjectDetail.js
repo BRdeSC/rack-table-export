@@ -15,11 +15,24 @@ function ObjectDetail({ objectId, onBack, onError }) {
 
   const { object, attributes = [], ports = [], rack } = objectData;
 
+  // Função para exportar PDF 
+  const handleExportPDF = () => {
+    window.location.href = apiService.exportObjectDetailPDF(objectId);
+  };
+
   return (
     <div className="object-detail">
-      <button className="back-button" onClick={onBack}>
-        ← Voltar para lista de equipamentos
-      </button>
+      <div className="object-detail-header">
+        <button className="back-button" onClick={onBack}>
+          ← Voltar para lista de equipamentos
+        </button>
+        <div className="export-buttons">
+          
+          <button onClick={handleExportPDF} className="export-button pdf-button">
+            📄 Exportar PDF
+          </button>
+        </div>
+      </div>
       
       <div className="object-header">
         <h2>{object.name}</h2>
@@ -95,26 +108,30 @@ function ObjectDetail({ objectId, onBack, onError }) {
         </div>
       )}
 
-      {/* Tabela de Portas
-      {ports.length > 0 && (
+       {/* Tabela de Portas  */}
+      {/* {ports.length > 0 && (
         <div className="section">
           <h3><strong>Portas de Rede</strong></h3>
-          <table className="data-table">
+          <table className="data-table ports-table">
             <thead>
               <tr>
-                <th>Nome</th>
-                <th>Tipo</th>
-                <th>IP</th>
-                <th>Estado</th>
+                <th>Local name</th>
+                <th>Visible label</th>
+                <th>Interface</th>
+                <th>L2 address</th>
+                <th>Remote object and port</th>
+                <th>Cable ID</th>
               </tr>
             </thead>
             <tbody>
               {ports.map((port, index) => (
                 <tr key={index}>
                   <td>{port.port_name}</td>
-                  <td>{port.port_type}</td>
-                  <td>{port.port_label || 'N/A'}</td>
-                  <td>{port.port_state}</td>
+                  <td>{port.port_label || ''}</td>
+                  <td>{port.interface_name}</td> 
+                  <td>{port.l2_address}</td>
+                  <td>N/A</td>
+                  <td>N/A</td>
                 </tr>
               ))}
             </tbody>

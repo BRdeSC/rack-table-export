@@ -97,6 +97,11 @@ class ApiService {
     return `${this.baseURL}/objects/export/xlsx`;
   }
 
+  // Detalhes do equipamento em pdf
+  exportObjectDetailPDF(objectId) {
+    return `${this.baseURL}/object/${objectId}/export-pdf`;
+  }
+
   // Contacts
   async getContacts() {
     return this.request('/contacts');

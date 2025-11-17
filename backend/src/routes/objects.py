@@ -241,14 +241,19 @@ def get_object_detail(db, object_id):
     try:
         cursor.execute("""
             SELECT 
-                name as port_name,
-                type as port_type,
-                label as port_label
-            FROM Port 
-            WHERE object_id = %s
-            ORDER BY name
+                p.name AS port_name,
+                p.type AS port_type_id,
+                pt.name AS port_type,
+                p.label AS port_label
+            FROM Port p
+            LEFT JOIN PortOuterInterface poi ON poi.id = p.type
+            LEFT JOIN PortType pt ON pt.id = p.type
+            WHERE p.object_id = %s
+            ORDER BY p.name
         """, (object_id,))
+
         ports = cursor.fetchall()
+
     except MySQLdb.Error:
         pass
     

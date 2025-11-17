@@ -363,6 +363,234 @@ def export_equipments_filtered_xlsx(db):
     )
 
 
+# Export PDF - Detalhes do Equipamento
+@exports_bp.route("/api/object/<int:object_id>/export-pdf")
+@db_connection
+def export_object_pdf(db, object_id):
+    try:
+        from flask import send_file
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.units import inch
+        from reportlab.lib import colors
+        from datetime import datetime
+        import html
+        
+        cursor = db.cursor(MySQLdb.cursors.DictCursor)
+        
+        # Buscar dados do objeto
+        cursor.execute("""
+            SELECT id, name, label, objtype_id, asset_no, has_problems, comment
+            FROM Object 
+            WHERE id = %s
+        """, (object_id,))
+        
+        obj = cursor.fetchone()
+        if not obj:
+            cursor.close()
+            return jsonify({"error": "Objeto não encontrado"}), 404
+        
+        from src.utils.object_types import get_object_type_name
+        obj['objtype_name'] = get_object_type_name(obj['objtype_id'])
+        
+        # Informações do rack
+        cursor.execute("""
+            SELECT r.name as rack_name, rs.unit_no, l.name as location_name
+            FROM RackSpace rs
+            JOIN Rack r ON rs.rack_id = r.id
+            LEFT JOIN Location l ON r.location_id = l.id
+            WHERE rs.object_id = %s
+        """, (object_id,))
+        rack_info = cursor.fetchone()
+        
+        # Atributos
+        cursor.execute("""
+            SELECT a.name as attribute_name,
+                   COALESCE(av.string_value, av.uint_value, av.float_value) as attribute_value
+            FROM AttributeValue av 
+            JOIN Attribute a ON av.attr_id = a.id 
+            WHERE av.object_id = %s
+        """, (object_id,))
+        attributes = cursor.fetchall()
+        
+        # Portas de rede
+        ports = []
+        try:
+            cursor.execute("""
+                SELECT name as port_name, type as port_type,
+                       label as port_label, l2address as l2_address
+                FROM Port WHERE object_id = %s ORDER BY name
+            """, (object_id,))
+            raw_ports = cursor.fetchall()
+            
+            # Função local para mapear tipos de porta
+            def get_port_type_name(port_type):
+                port_type_map = {
+                    24: '1000Base-T',
+                    33: 'KVM (host)',
+                    1: 'Ethernet', 2: 'Fast Ethernet', 3: 'Gigabit Ethernet',
+                    4: '10 Gigabit Ethernet', 5: 'Fibre Channel', 6: 'InfiniBand',
+                    7: 'Serial', 8: 'USB', 9: 'SAS', 10: 'SATA'
+                }
+                return port_type_map.get(port_type, f"Type {port_type}")
+            
+            for port in raw_ports:
+                processed_port = {
+                    'port_name': port['port_name'],
+                    'interface_name': get_port_type_name(port['port_type']),
+                    'port_label': port['port_label'] or '',
+                    'l2_address': port['l2_address'] or 'N/A'
+                }
+                ports.append(processed_port)
+        except MySQLdb.Error:
+            ports = []
+        
+        cursor.close()
+        
+        # Criar PDF
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4)
+        elements = []
+        styles = getSampleStyleSheet()
+        
+        # Estilos
+        title_style = ParagraphStyle(
+            'Title',
+            parent=styles['Heading1'],
+            fontSize=16,
+            textColor=colors.HexColor("#0077BA"),
+            alignment=1,
+            spaceAfter=20
+        )
+        
+        heading_style = ParagraphStyle(
+            'Heading',
+            parent=styles['Heading2'],
+            fontSize=12,
+            spaceAfter=12,
+            spaceBefore=20,
+            textColor=colors.HexColor("#34495e")
+        )
+        
+        # Título
+        elements.append(Paragraph(f"FICHA TÉCNICA - {obj['name']}", title_style))
+        elements.append(Spacer(1, 0.1*inch))
+        
+        # Informações Básicas
+        elements.append(Paragraph("RESUMO", heading_style))
+        
+        basic_data = [
+            ['Nome do Equipamento:', obj['name'] or 'N/A'],
+            ['Tipo:', obj['objtype_name'] or 'N/A'],
+            ['Label Visível:', obj['label'] or 'N/A'],
+            ['Asset Tag:', obj['asset_no'] or 'N/A'],
+            ['Tem Problemas:', 'Sim' if obj['has_problems'] else 'Não'],
+        ]
+        
+        if rack_info:
+            basic_data.extend([
+                ['Rack:', rack_info['rack_name'] or 'N/A'],
+                ['Unit No:', rack_info['unit_no'] or 'N/A'],
+                ['Localização:', rack_info['location_name'] or 'N/A']
+            ])
+        
+        basic_table = Table(basic_data, colWidths=[2*inch, 4*inch])
+        basic_table.setStyle(TableStyle([
+            ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 10),
+            ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#ecf0f1')),
+            ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+            ('ALIGN', (0, 0), (0, -1), 'LEFT'),
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+        ]))
+        elements.append(basic_table)
+        
+        # Atributos
+        if attributes:
+            elements.append(Paragraph("ATRIBUTOS", heading_style))
+            
+            attr_data = [['Atributo', 'Valor']]
+            for attr in attributes:
+                value = str(attr['attribute_value'])[:100] + ('...' if len(str(attr['attribute_value'])) > 100 else '')
+                attr_data.append([attr['attribute_name'], value])
+            
+            attr_table = Table(attr_data, colWidths=[2.5*inch, 3.5*inch])
+            attr_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 9),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#0077BA")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ]))
+            elements.append(attr_table)
+        
+        # Portas de Rede
+        if ports:
+            elements.append(Paragraph("PORTAS DE REDE", heading_style))
+            
+            # TÍTULOS ATUALIZADOS
+            ports_data = [['Local name', 'Visible label', 'Interface', 'L2 address', 'Remote object and port', 'Cable ID']]
+            for port in ports:
+                ports_data.append([
+                    port['port_name'],                    # Local name
+                    port['port_label'],                   # Visible label  
+                    port['interface_name'],               # Interface
+                    port['l2_address'],                   # L2 address
+                    '',                                   # Remote object and port (vazio por enquanto)
+                    ''                                    # Cable ID (vazio por enquanto)
+                ])
+            
+            # Ajustar larguras das colunas para os novos títulos
+            ports_table = Table(ports_data, colWidths=[0.9*inch, 0.8*inch, 0.9*inch, 1*inch, 1.5*inch, 1*inch])
+            ports_table.setStyle(TableStyle([
+                ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 0), (-1, -1), 8),
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor("#0077BA")),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 1, colors.grey),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+            ]))
+            elements.append(ports_table)
+        
+        # Comentários
+        if obj.get('comment'):
+            elements.append(Paragraph("COMENTÁRIOS", heading_style))
+            comment = html.unescape(obj['comment'])
+            if len(comment) > 500:
+                comment = comment[:500] + "... [texto truncado]"
+            comment_para = Paragraph(comment.replace('\n', '<br/>'), styles['Normal'])
+            elements.append(comment_para)
+        
+        # Rodapé
+        elements.append(Spacer(1, 0.3*inch))
+        footer_style = ParagraphStyle('Footer', fontSize=8, textColor=colors.grey, alignment=1)
+        elements.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}", footer_style))
+        
+        # Gerar PDF
+        doc.build(elements)
+        buffer.seek(0)
+        
+        # Nome do arquivo
+        safe_name = "".join(c for c in obj['name'] if c.isalnum() or c in (' ', '-', '_')).rstrip()
+        filename = f"ficha_tecnica_{safe_name}.pdf"
+        
+        return send_file(
+            buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=filename
+        )
+        
+    except Exception as e:
+        print(f"Erro na geração do PDF: {e}")
+        return jsonify({"error": f"Erro na geração do PDF: {str(e)}"}), 500
+
+
 # Exportar PDF - Lista de equipamentos por rack
 @exports_bp.route("/api/objects/rack/<int:rack_id>/export/pdf")
 @db_connection
