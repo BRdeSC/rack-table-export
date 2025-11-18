@@ -108,7 +108,7 @@ function ObjectDetail({ objectId, onBack, onError }) {
       )}
 
       {/* Tabela de Portas  */}
-      {/* {ports.length > 0 && (
+      {ports.length > 0 && (
         <div className="section">
           <h3><strong>Portas de Rede</strong></h3>
           <table className="data-table ports-table">
@@ -136,8 +136,7 @@ function ObjectDetail({ objectId, onBack, onError }) {
             </tbody>
           </table>
         </div>
-      )} */}
-
+      )} 
       
       {attributes.length === 0 && ports.length === 0 && !object.comment && !rack && (
         <div className="no-data">

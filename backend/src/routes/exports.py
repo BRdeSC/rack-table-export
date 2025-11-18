@@ -376,6 +376,7 @@ def export_object_pdf(db, object_id):
         from reportlab.lib import colors
         from datetime import datetime
         import html
+        from io import BytesIO
         
         cursor = db.cursor(MySQLdb.cursors.DictCursor)
         
@@ -404,7 +405,7 @@ def export_object_pdf(db, object_id):
         """, (object_id,))
         rack_info = cursor.fetchone()
         
-        # Atributos
+        # ATRIBUTOS 
         cursor.execute("""
             SELECT a.name as attribute_name,
                    COALESCE(av.string_value, av.uint_value, av.float_value) as attribute_value
@@ -412,7 +413,58 @@ def export_object_pdf(db, object_id):
             JOIN Attribute a ON av.attr_id = a.id 
             WHERE av.object_id = %s
         """, (object_id,))
-        attributes = cursor.fetchall()
+        raw_attributes = cursor.fetchall()
+        
+        # PROCESSAR ATRIBUTOS
+        processed_attributes = []
+        
+        # Carregar mapeamentos
+        from src.routes.objects import get_hw_type_map, get_sw_type_map
+        hw_type_map = get_hw_type_map(db)
+        sw_type_map = get_sw_type_map(db)
+        
+        for attr in raw_attributes:
+            attribute_name = attr['attribute_name']
+            attribute_value = attr['attribute_value']
+            
+            # Format support contract expiration
+            if attribute_name == 'support contract expiration' and attribute_value:
+                try:
+                    from datetime import datetime, timezone
+                    dt = datetime.fromtimestamp(int(attribute_value), tz=timezone.utc)
+                    attr['attribute_value'] = dt.strftime('%Y-%m-%d') 
+                except:
+                    pass
+            
+            # Format HW warranty expiration
+            elif attribute_name == 'HW warranty expiration' and attribute_value:
+                try:
+                    from datetime import datetime, timezone
+                    dt = datetime.fromtimestamp(int(attribute_value), tz=timezone.utc)
+                    attr['attribute_value'] = dt.strftime('%Y-%m-%d') 
+                except:
+                    pass
+            
+            # Mapear HW type
+            elif attribute_name == 'HW type' and attribute_value:
+                mapped_value = hw_type_map.get(str(attribute_value), f"HW Type {attribute_value}")
+                attr['attribute_value'] = mapped_value
+
+            # Mapear SW type
+            elif attribute_name == 'SW type' and attribute_value:
+                mapped_value = sw_type_map.get(str(attribute_value), f"SW Type {attribute_value}")
+                attr['attribute_value'] = mapped_value
+            
+            # Mapear Hypervisor
+            elif attribute_name == 'Hypervisor' and attribute_value:
+                hypervisor_map = {
+                    '1501': 'Sim',
+                    '1502': 'Não',
+                }
+                mapped_value = hypervisor_map.get(str(attribute_value), f"Hypervisor {attribute_value}")
+                attr['attribute_value'] = mapped_value
+
+            processed_attributes.append(attr)
         
         # Portas de rede
         ports = []
@@ -448,7 +500,12 @@ def export_object_pdf(db, object_id):
         
         cursor.close()
         
-        # Criar PDF
+        # 🔥 Decodificar entidades HTML (usando função do objects.py)
+        from src.routes.objects import decode_html_entities
+        if obj.get('comment'):
+            obj['comment'] = decode_html_entities(obj['comment'])
+        
+        # Criar PDF (MANTENDO ESTRUTURA ORIGINAL)
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
         elements = []
@@ -485,13 +542,13 @@ def export_object_pdf(db, object_id):
             ['Tipo:', obj['objtype_name'] or 'N/A'],
             ['Label Visível:', obj['label'] or 'N/A'],
             ['Asset Tag:', obj['asset_no'] or 'N/A'],
-            ['Tem Problemas:', 'Sim' if obj['has_problems'] else 'Não'],
+            ['Tem Problemas:', obj['has_problems'] or 'N/A'],
         ]
         
         if rack_info:
             basic_data.extend([
                 ['Rack:', rack_info['rack_name'] or 'N/A'],
-                ['Unit No:', rack_info['unit_no'] or 'N/A'],
+                ['Posição no rack:', rack_info['unit_no'] or 'N/A'],
                 ['Localização:', rack_info['location_name'] or 'N/A']
             ])
         
@@ -507,12 +564,12 @@ def export_object_pdf(db, object_id):
         ]))
         elements.append(basic_table)
         
-        # Atributos
-        if attributes:
+        # ATRIBUTOS
+        if processed_attributes:
             elements.append(Paragraph("ATRIBUTOS", heading_style))
             
             attr_data = [['Atributo', 'Valor']]
-            for attr in attributes:
+            for attr in processed_attributes: # Usando processed_attributes
                 value = str(attr['attribute_value'])[:100] + ('...' if len(str(attr['attribute_value'])) > 100 else '')
                 attr_data.append([attr['attribute_name'], value])
             
@@ -532,7 +589,6 @@ def export_object_pdf(db, object_id):
         if ports:
             elements.append(Paragraph("PORTAS DE REDE", heading_style))
             
-            # TÍTULOS ATUALIZADOS
             ports_data = [['Local name', 'Visible label', 'Interface', 'L2 address', 'Remote object and port', 'Cable ID']]
             for port in ports:
                 ports_data.append([
@@ -540,11 +596,10 @@ def export_object_pdf(db, object_id):
                     port['port_label'],                   # Visible label  
                     port['interface_name'],               # Interface
                     port['l2_address'],                   # L2 address
-                    '',                                   # Remote object and port (vazio por enquanto)
-                    ''                                    # Cable ID (vazio por enquanto)
+                    '',                                   # Remote object and port
+                    ''                                    # Cable ID
                 ])
             
-            # Ajustar larguras das colunas para os novos títulos
             ports_table = Table(ports_data, colWidths=[0.9*inch, 0.8*inch, 0.9*inch, 1*inch, 1.5*inch, 1*inch])
             ports_table.setStyle(TableStyle([
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
@@ -560,7 +615,7 @@ def export_object_pdf(db, object_id):
         # Comentários
         if obj.get('comment'):
             elements.append(Paragraph("COMENTÁRIOS", heading_style))
-            comment = html.unescape(obj['comment'])
+            comment = obj['comment']  # Já foi decodificado
             if len(comment) > 500:
                 comment = comment[:500] + "... [texto truncado]"
             comment_para = Paragraph(comment.replace('\n', '<br/>'), styles['Normal'])
@@ -589,6 +644,7 @@ def export_object_pdf(db, object_id):
     except Exception as e:
         print(f"Erro na geração do PDF: {e}")
         return jsonify({"error": f"Erro na geração do PDF: {str(e)}"}), 500
+
 
 
 # Exportar PDF - Lista de equipamentos por rack
