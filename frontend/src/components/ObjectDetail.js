@@ -26,12 +26,11 @@ function ObjectDetail({ objectId, onBack, onError }) {
         <button className="back-button" onClick={onBack}>
           ← Voltar para lista de equipamentos
         </button>
-        <div className="export-buttons">
-          
-          <button onClick={handleExportPDF} className="export-button pdf-button">
-            📄 Exportar PDF
-          </button>
-        </div>
+
+        <button onClick={handleExportPDF} className="export-button">
+          📄 Exportar PDF
+        </button>
+        
       </div>
       
       <div className="object-header">
@@ -108,7 +107,7 @@ function ObjectDetail({ objectId, onBack, onError }) {
         </div>
       )}
 
-       {/* Tabela de Portas  */}
+      {/* Tabela de Portas  */}
       {/* {ports.length > 0 && (
         <div className="section">
           <h3><strong>Portas de Rede</strong></h3>

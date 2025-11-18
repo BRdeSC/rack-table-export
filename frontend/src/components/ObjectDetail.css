@@ -14,10 +14,11 @@
   border-radius: 6px;
   cursor: pointer;
   margin-bottom: 1.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  transition: background 0.3s ease;
+}
+
+.object-detail button:hover {
+  background: #2980b9;
 }
 
 .object-detail h2 {
