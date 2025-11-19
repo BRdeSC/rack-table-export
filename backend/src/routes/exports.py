@@ -499,12 +499,12 @@ def export_object_pdf(db, object_id):
         
         cursor.close()
         
-        # 🔥 Decodificar entidades HTML (usando função do objects.py)
+        # Decodificar entidades HTML (usando função do objects.py)
         from src.routes.objects import decode_html_entities
         if obj.get('comment'):
             obj['comment'] = decode_html_entities(obj['comment'])
         
-        # Criar PDF (MANTENDO ESTRUTURA ORIGINAL)
+        # Criar PDF 
         buffer = BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
         elements = []
@@ -537,18 +537,18 @@ def export_object_pdf(db, object_id):
         elements.append(Paragraph("RESUMO", heading_style))
         
         basic_data = [
-            ['Nome do Equipamento:', obj['name'] or 'N/A'],
-            ['Tipo:', obj['objtype_name'] or 'N/A'],
-            ['Label Visível:', obj['label'] or 'N/A'],
+            ['Common name:', obj['name'] or 'N/A'],
+            ['Object type:', obj['objtype_name'] or 'N/A'],
+            ['Visible label:', obj['label'] or 'N/A'],
             ['Asset Tag:', obj['asset_no'] or 'N/A'],
-            ['Tem Problemas:', obj['has_problems'] or 'N/A'],
+            ['has_problems:', obj['has_problems'] or 'N/A'],
         ]
         
         if rack_info:
             basic_data.extend([
                 ['Rack:', rack_info['rack_name'] or 'N/A'],
-                ['Posição no rack:', rack_info['unit_no'] or 'N/A'],
-                ['Localização:', rack_info['location_name'] or 'N/A']
+                ['rack position:', rack_info['unit_no'] or 'N/A'],
+                ['location:', rack_info['location_name'] or 'N/A']
             ])
         
         basic_table = Table(basic_data, colWidths=[2*inch, 4*inch])
