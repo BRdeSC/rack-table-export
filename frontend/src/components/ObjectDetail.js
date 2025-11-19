@@ -89,24 +89,6 @@ function ObjectDetail({ objectId, onBack, onError }) {
         </div>
       )}
 
-      {/* Tabela de Comentários */}
-      {object.comment && (
-        <div className="section">
-          <h3><strong>Comentários</strong></h3>
-          <table className="data-table">
-            <tbody>
-              <tr>
-                <td className="comment-cell">
-                  {object.comment.split('\n').map((line, index) => (
-                    <div key={index}>{line || <br />}</div>
-                  ))}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      )}
-
       {/* Tabela de Portas  */}
       {ports.length > 0 && (
         <div className="section">
@@ -137,6 +119,24 @@ function ObjectDetail({ objectId, onBack, onError }) {
           </table>
         </div>
       )} 
+
+      {/* Tabela de Comentários */}
+      {object.comment && (
+        <div className="section">
+          <h3><strong>Comentários</strong></h3>
+          <table className="data-table">
+            <tbody>
+              <tr>
+                <td className="comment-cell">
+                  {object.comment.split('\n').map((line, index) => (
+                    <div key={index}>{line || <br />}</div>
+                  ))}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
       
       {attributes.length === 0 && ports.length === 0 && !object.comment && !rack && (
         <div className="no-data">

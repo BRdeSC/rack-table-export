@@ -615,7 +615,7 @@ def export_object_pdf(db, object_id):
         # Comentários
         if obj.get('comment'):
             elements.append(Paragraph("COMENTÁRIOS", heading_style))
-            comment = obj['comment']  # Já foi decodificado
+            comment = obj['comment']  
             if len(comment) > 500:
                 comment = comment[:500] + "... [texto truncado]"
             comment_para = Paragraph(comment.replace('\n', '<br/>'), styles['Normal'])
@@ -649,65 +649,3 @@ def export_object_pdf(db, object_id):
 
 
 
-# Exportar PDF - Lista de equipamentos por rack
-@exports_bp.route("/api/objects/rack/<int:rack_id>/export/pdf")
-@db_connection
-def export_rack_objects_pdf(db, rack_id):
-    cursor = db.cursor(MySQLdb.cursors.DictCursor) 
-    
-    # Nome do rack
-    cursor.execute("SELECT name FROM Rack WHERE id = %s", (rack_id,))
-    rack_result = cursor.fetchone()
-    rack_name = rack_result['name'] if rack_result else f"Rack_{rack_id}"
-    
-    # Dados dos equipamentos
-    cursor.execute("""
-        SELECT 
-            o.id, o.name, o.objtype_id, o.asset_no,
-            rs.unit_no
-        FROM RackSpace rs
-        JOIN Object o ON rs.object_id = o.id
-        WHERE rs.rack_id = %s
-        ORDER BY rs.unit_no DESC
-    """, (rack_id,))
-    data = cursor.fetchall()
-    
-    # Processar dados para incluir objtype_name
-    processed_data = []
-    for row in data:
-        objtype_name = get_object_type_name(row['objtype_id'])
-        processed_data.append([
-            row['id'],
-            row['name'],
-            objtype_name,  # Usar nome do tipo
-            row['asset_no'] or 'N/A',
-            row['unit_no'] or 'N/A'
-        ])
-    
-    buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter)
-    
-    # Criar a tabela de dados
-    table_data = [["ID", "Nome", "Tipo", "Asset No.", "Unidade"]]
-    table_data.extend(processed_data)
-
-    table = Table(table_data)
-    
-    # Estilo da tabela
-    style = TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-        ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ('BOX', (0, 0), (-1, -1), 1, colors.black),
-    ])
-    table.setStyle(style)
-    
-    story = [table]
-    doc.build(story)
-    
-    buffer.seek(0)
-    
-    return Response(
-        buffer.getvalue(),
-        mimetype="application/pdf",
-        headers={"Content-Disposition": f"attachment;filename={rack_name}_equipamentos.pdf"}
-    )

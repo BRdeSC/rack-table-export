@@ -216,19 +216,19 @@ def get_object_detail(db, object_id):
             mapped_value = hw_type_map.get(original_value, f"HW Type {original_value}")
             attr['attribute_value'] = mapped_value
 
-        # Mapear SW type (NOVO) - seguindo o mesmo padrão
+        # Mapear SW type 
         elif attr['attribute_name'] == 'SW type' and attr['attribute_value']:
             sw_type_map = get_sw_type_map(db)
             original_value = attr['attribute_value']
             mapped_value = sw_type_map.get(original_value, f"SW Type {original_value}")
             attr['attribute_value'] = mapped_value
         
-        # Mapear Hypervisor (NOVO)
+        # Mapear Hypervisor
         elif attr['attribute_name'] == 'Hypervisor' and attr['attribute_value']:
             hypervisor_map = {
                 '1501': 'Sim',
                 '1502': 'Não',
-                # Podemos adicionar mais conforme necessário
+                
             }
             original_value = attr['attribute_value']
             mapped_value = hypervisor_map.get(original_value, f"Hypervisor {original_value}")
@@ -242,20 +242,37 @@ def get_object_detail(db, object_id):
         cursor.execute("""
             SELECT 
                 p.name AS port_name,
-                p.type AS port_type_id,
-                pt.name AS port_type,
-                p.label AS port_label
+                p.label AS port_label,
+                p.l2address AS l2_address,
+
+                -- Nome da interface (mais preciso)
+                COALESCE(d.dict_value, oi.oif_name, ii.iif_name) AS interface_name,
+
+                p.type AS port_type_id
+
             FROM Port p
-            LEFT JOIN PortOuterInterface poi ON poi.id = p.type
-            LEFT JOIN PortType pt ON pt.id = p.type
+            LEFT JOIN Dictionary d ON d.dict_key = p.type
+            LEFT JOIN PortOuterInterface oi ON oi.id = p.type
+            LEFT JOIN PortInnerInterface ii ON ii.id = p.type
             WHERE p.object_id = %s
-            ORDER BY p.name
+            ORDER BY p.name;
         """, (object_id,))
 
-        ports = cursor.fetchall()
+        raw_ports = cursor.fetchall()
+
+        ports = []
+        for port in raw_ports:
+            ports.append({
+                "port_name": port["port_name"],
+                "port_label": port["port_label"] or "",
+                "l2_address": port["l2_address"] or "",
+                "interface_name": port["interface_name"] or "N/A",
+                "port_type_id": port["port_type_id"],
+            })
 
     except MySQLdb.Error:
         pass
+
     
         cursor.close()
     
