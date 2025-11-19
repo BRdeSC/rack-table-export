@@ -465,38 +465,37 @@ def export_object_pdf(db, object_id):
                 attr['attribute_value'] = mapped_value
 
             processed_attributes.append(attr)
-        
+
         # Portas de rede
         ports = []
         try:
             cursor.execute("""
-                SELECT name as port_name, type as port_type,
-                       label as port_label, l2address as l2_address
-                FROM Port WHERE object_id = %s ORDER BY name
+                SELECT
+                    p.name AS port_name,
+                    p.label AS port_label,
+                    p.l2address AS l2_address,
+                    COALESCE(oi.oif_name, ii.iif_name) AS interface_name
+                FROM Port p
+                LEFT JOIN PortOuterInterface oi ON oi.id = p.type
+                LEFT JOIN PortInnerInterface ii ON ii.id = p.type
+                WHERE p.object_id = %s
+                ORDER BY p.name;
             """, (object_id,))
+
             raw_ports = cursor.fetchall()
-            
-            # Função local para mapear tipos de porta
-            def get_port_type_name(port_type):
-                port_type_map = {
-                    24: '1000Base-T',
-                    33: 'KVM (host)',
-                    1: 'Ethernet', 2: 'Fast Ethernet', 3: 'Gigabit Ethernet',
-                    4: '10 Gigabit Ethernet', 5: 'Fibre Channel', 6: 'InfiniBand',
-                    7: 'Serial', 8: 'USB', 9: 'SAS', 10: 'SATA'
-                }
-                return port_type_map.get(port_type, f"Type {port_type}")
-            
+
             for port in raw_ports:
                 processed_port = {
                     'port_name': port['port_name'],
-                    'interface_name': get_port_type_name(port['port_type']),
                     'port_label': port['port_label'] or '',
+                    'interface_name': port['interface_name'] or 'N/A',
                     'l2_address': port['l2_address'] or 'N/A'
                 }
                 ports.append(processed_port)
+
         except MySQLdb.Error:
             ports = []
+
         
         cursor.close()
         
