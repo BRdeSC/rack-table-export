@@ -226,8 +226,8 @@ def get_object_detail(db, object_id):
         # Mapear Hypervisor
         elif attr['attribute_name'] == 'Hypervisor' and attr['attribute_value']:
             hypervisor_map = {
-                '1501': 'Sim',
-                '1502': 'Não',
+                '1501': 'Yes',
+                '1500': 'No',
                 
             }
             original_value = attr['attribute_value']
