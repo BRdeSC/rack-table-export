@@ -375,6 +375,7 @@ def export_object_pdf(db, object_id):
         from reportlab.lib.units import inch
         from reportlab.lib import colors
         from datetime import datetime
+        from zoneinfo import ZoneInfo
         import html
         from io import BytesIO
         
@@ -623,7 +624,9 @@ def export_object_pdf(db, object_id):
         # Rodapé
         elements.append(Spacer(1, 0.3*inch))
         footer_style = ParagraphStyle('Footer', fontSize=8, textColor=colors.grey, alignment=1)
-        elements.append(Paragraph(f"Gerado em {datetime.now().strftime('%d/%m/%Y às %H:%M')}", footer_style))
+
+        agora = datetime.now(ZoneInfo("America/Sao_Paulo"))
+        elements.append(Paragraph(f"Gerado em {agora.strftime('%d/%m/%Y às %H:%M')}", footer_style))
         
         # Gerar PDF
         doc.build(elements)
