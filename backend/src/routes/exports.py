@@ -16,14 +16,18 @@ exports_bp = Blueprint('exports', __name__)
 @db_connection
 def export_racks_xlsx(db):
     cursor = db.cursor()
+    
     cursor.execute("""
         SELECT 
-            r.name, r.location_name, r.row_name, 
+            r.name, 
+            r.location_name, 
+            r.row_name, 
             r.height,
-            COUNT(DISTINCT rs.object_id) as object_count
+            COUNT(DISTINCT rs.object_id) as object_count,
+            (r.height - COUNT(DISTINCT rs.unit_no)) as empty_slots
         FROM Rack r
         LEFT JOIN RackSpace rs ON r.id = rs.rack_id
-        GROUP BY r.id
+        GROUP BY r.id, r.name, r.location_name, r.row_name, r.height
         ORDER BY r.name
     """)
     data = cursor.fetchall()
@@ -34,7 +38,7 @@ def export_racks_xlsx(db):
 
     title = "Relatório de Racks"
     logo_path = "logo-coids.png" 
-    headers = ["Rack", "Localizacao", "Linha", "Altura", "Equipamentos"]
+    headers = ["Rack", "Localizacao", "Linha", "Altura", "Equipamentos", "Slots Vazios"]
     apply_excel_styles(ws, title, headers, data, logo_path)
 
     buffer = BytesIO()
@@ -153,7 +157,7 @@ def export_all_objects_xlsx(db):
             row['name'],
             row['location_names'] or 'N/A',
             row['rack_names'] or 'N/A',
-            objtype_name,  # Usar nome do tipo em vez do ID
+            objtype_name,  
             row['asset_no'] or 'N/A'
         )
         processed_data.append(processed_row)
