@@ -11,15 +11,23 @@ racks_bp = Blueprint('racks', __name__)
 def get_racks(db):
     cursor = db.cursor(MySQLdb.cursors.DictCursor)
     
+    # Query otimizada para incluir slots vazios
     cursor.execute("""
         SELECT 
-            r.id, r.name, r.height, r.row_name,
-            r.location_id, r.location_name,
-            r.asset_no, r.comment,
-            COUNT(DISTINCT rs.object_id) as object_count
+            r.id, 
+            r.name, 
+            r.height, 
+            r.row_name,
+            r.location_id, 
+            r.location_name,
+            r.asset_no, 
+            r.comment,
+            COUNT(DISTINCT rs.object_id) as object_count,
+            (r.height - COUNT(DISTINCT rs.unit_no)) as empty_slots
         FROM Rack r
         LEFT JOIN RackSpace rs ON r.id = rs.rack_id
-        GROUP BY r.id
+        GROUP BY r.id, r.name, r.height, r.row_name, r.location_id, 
+                 r.location_name, r.asset_no, r.comment
         ORDER BY r.name
     """)
     

@@ -5,52 +5,7 @@ import "./RackList.css"
 
 function RackList({ onSelectRack, onError }) {
   const { data: racks, loading, error } = useApi(() => apiService.getRacks());
-  const [rackDetails, setRackDetails] = React.useState({});
-  const [loadingDetails, setLoadingDetails] = React.useState(true);
   const [selectedRow, setSelectedRow] = useState('');
-
-  // Buscar detalhes completos de cada rack para calcular slots vazios
-  React.useEffect(() => {
-    const fetchRackDetails = async () => {
-      if (!racks) return;
-
-      try {
-        setLoadingDetails(true);
-        const detailPromises = racks.map(rack =>
-          apiService.getRack(rack.id)
-            .then(rackDetail => ({
-              rackId: rack.id,
-              objects: rackDetail.objects || []
-            }))
-            .catch(error => {
-              console.error(`Erro ao carregar detalhes do rack ${rack.id}:`, error);
-              return { rackId: rack.id, objects: [] };
-            })
-        );
-
-        const details = await Promise.all(detailPromises);
-        const detailsMap = {};
-        details.forEach(detail => {
-          detailsMap[detail.rackId] = detail.objects;
-        });
-        setRackDetails(detailsMap);
-      } catch (err) {
-        onError?.(`Erro ao carregar detalhes dos racks: ${err.message}`);
-      } finally {
-        setLoadingDetails(false);
-      }
-    };
-
-    fetchRackDetails();
-  }, [racks, onError]);
-
-  // Função para calcular slots vazios (mesma lógica do RackView original)
-  const calculateEmptySlots = (rack, objects) => {
-    if (!objects || objects.length === 0) return rack.height;
-    
-    const occupiedSlots = new Set(objects.map(obj => obj.unit_no));
-    return rack.height - occupiedSlots.size;
-  };
 
   // Extrair fileiras únicas dos racks
   const getUniqueRows = () => {
@@ -112,9 +67,9 @@ function RackList({ onSelectRack, onError }) {
 
       <div className="racks-grid">
         {filteredRacks?.map(rack => {
-          const rackObjects = rackDetails[rack.id] || [];
-          const emptySlots = calculateEmptySlots(rack, rackObjects);
-          const equipmentCount = new Set(rackObjects.map(obj => obj.id)).size; // Equipamentos únicos
+          // CÁLCULO: usar slots ocupados em vez de quantidade de equipamentos
+          const slotsOcupados = rack.height - rack.empty_slots;
+          const ocupacaoPercentual = Math.floor((slotsOcupados / rack.height) * 100);
           
           return (
             <div 
@@ -127,11 +82,17 @@ function RackList({ onSelectRack, onError }) {
                 <p><strong>Localização:</strong> {rack.location_name || 'N/A'}</p>
                 <p><strong>Fileira:</strong> {rack.row_name || 'N/A'}</p>
                 <p><strong>Altura:</strong> {rack.height}U</p>
-                <p><strong>Equipamentos:</strong> {equipmentCount}</p>
-                <p><strong>Slots vazios:</strong> {emptySlots}</p>
-                {loadingDetails && rackDetails[rack.id] === undefined && (
-                  <p><em>Calculando slots...</em></p>
-                )}
+                <p><strong>Equipamentos:</strong> {rack.object_count}</p>
+                <p><strong>Slots vazios:</strong> {rack.empty_slots}</p>
+                <p><strong>Ocupação:</strong> {ocupacaoPercentual}%</p>
+              </div>
+              
+              {/* Barra de progresso visual */}
+              <div className="occupancy-bar">
+                <div 
+                  className="occupancy-fill"
+                  style={{ width: `${ocupacaoPercentual}%` }}
+                ></div>
               </div>
             </div>
           );
