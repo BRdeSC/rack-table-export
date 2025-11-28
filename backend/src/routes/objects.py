@@ -317,7 +317,7 @@ def get_objects_by_type(db, objtype_id):
     cursor.close()
     return jsonify(data)
 
-# Rota para listar todos os tipos disponíveis (OPCIONAL - útil para frontend)
+# Rota para listar todos os tipos disponíveis (útil para frontend)
 @objects_bp.route("/api/object-types")
 @db_connection
 def get_object_types(db):

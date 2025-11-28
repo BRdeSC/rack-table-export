@@ -85,7 +85,7 @@ def global_search(db):
         
         # Processar resultados de contatos para adicionar ID único
         for contact in contact_results:
-            # Usar a mesma lógica de hash do seu contacts_bp
+            # Usar a mesma lógica de hash do contacts_bp
             contact_id = hashlib.sha1(contact['contact_name'].encode()).hexdigest()
             contact['id'] = contact_id
             contact['name'] = contact['contact_name']  # Padronizar para 'name'

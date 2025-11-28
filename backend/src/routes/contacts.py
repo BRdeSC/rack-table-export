@@ -37,7 +37,7 @@ def get_contact_persons(db):
     
     return jsonify(data)
 
-# Rota para buscar equipamentos por nome de pessoa (ATUALIZADA seguindo o padrão da API de objetos)
+# Rota para buscar equipamentos por nome de pessoa (seguindo o padrão da API de objetos)
 @contacts_bp.route("/api/objects/by_person/<string:name>")
 @db_connection
 def get_objects_by_person(db, name):
@@ -67,7 +67,6 @@ def get_objects_by_person(db, name):
     
     data = cursor.fetchall()
     
-    # ADICIONADO: Seguindo o mesmo padrão da API de objetos
     # Adicionar nome do tipo a cada objeto
     for obj in data:
         obj['objtype_name'] = get_object_type_name(obj['objtype_id'])

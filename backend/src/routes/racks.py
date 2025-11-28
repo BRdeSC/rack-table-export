@@ -35,7 +35,7 @@ def get_racks(db):
     cursor.close()
     return jsonify(data)
 
-# Rota para detalhes do rack - VERSÃO CORRIGIDA
+# Rota para detalhes do rack
 @racks_bp.route("/api/rack/<int:rack_id>")
 @db_connection
 def get_rack_detail(db, rack_id):
@@ -55,7 +55,7 @@ def get_rack_detail(db, rack_id):
         cursor.close()
         return jsonify({"error": "Rack não encontrado"}), 404
     
-    # Busca objetos no rack usando RackSpace (apenas equipamentos) - COLUNAS CORRETAS
+    # Busca objetos no rack usando RackSpace (apenas equipamentos)
     cursor.execute("""
         SELECT 
             o.id, o.name, o.objtype_id, o.asset_no,

@@ -128,19 +128,19 @@ function App() {
             onClick={() => handleNavClick("racks")}
             className={view === "racks" ? "active" : ""}
           >
-            🗄️ Racks
+            Racks
           </button>
           <button 
             onClick={() => handleNavClick("objects")}
             className={view === "objects" ? "active" : ""}
           >
-            💻 Equipamentos
+            Equipamentos
           </button>
           <button 
             onClick={() => handleNavClick("contacts")}
             className={view === "contacts" ? "active" : ""}
           >
-            👤 Responsáveis
+            Responsáveis
           </button>
           <button 
             onClick={() => handleNavClick("stats")}

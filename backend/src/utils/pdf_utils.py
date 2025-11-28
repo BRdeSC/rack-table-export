@@ -56,7 +56,7 @@ def apply_pdf_styles(doc, title_text, headers, data, logo_path=None):
             logo = Image(logo_path)
             logo.drawHeight = 0.7 * inch
             logo.drawWidth = 0.6 * inch
-            # Posicionar logo - precisaríamos de layout mais complexo
+            
         except:
             logo_path = None
     
