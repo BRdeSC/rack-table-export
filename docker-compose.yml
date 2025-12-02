@@ -9,6 +9,7 @@ services:
       - ./backend:/app
     env_file:  
       - ./.env
+    restart: always
 
   frontend:
     build: ./frontend
@@ -19,5 +20,6 @@ services:
     environment:
       - REACT_APP_API_URL=${REACT_APP_API_URL}
     depends_on:
-      - backend  
+      - backend
+    restart: always
 
