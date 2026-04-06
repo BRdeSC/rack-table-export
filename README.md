@@ -5,6 +5,7 @@
 Sistema para gerenciamento e visualização de racks e equipamentos em data centers, com funcionalidades de exportação de relatórios.
 
 ## 🏗️ Estrutura do Projeto
+```
 rack-table-filter/
 ├── app.py # API Flask backend
 ├── requirements.txt # Dependências Python
@@ -15,8 +16,7 @@ rack-table-filter/
 ├── src/
 ├── package.json
 └── ...arquivos React
-
-text
+``` 
 
 ## ✨ Funcionalidades
 
