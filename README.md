@@ -1,5 +1,7 @@
 # Data Center Rack Management
 
+[Gravação de tela de 2026-04-06 11-12-35.webm](https://github.com/user-attachments/assets/09924af3-64dd-433d-80c4-1a1255be18da)
+
 Sistema para gerenciamento e visualização de racks e equipamentos em data centers, com funcionalidades de exportação de relatórios.
 
 ## 🏗️ Estrutura do Projeto
