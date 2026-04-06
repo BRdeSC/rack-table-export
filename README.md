@@ -5,120 +5,33 @@
 Sistema para gerenciamento e visualização de racks e equipamentos em data centers, com funcionalidades de exportação de relatórios.
 
 ## 🏗️ Estrutura do Projeto
-```
-rack-table-filter/
-├── app.py # API Flask backend
-├── requirements.txt # Dependências Python
-├── .gitignore # Arquivos ignorados pelo Git
-├── README.md # Documentação do projeto
-└── frontend/ # Aplicação React
-├── public/
-├── src/
-├── package.json
-└── ...arquivos React
-``` 
 
-## ✨ Funcionalidades
+A arquitetura foi desenhada separando claramente as responsabilidades de backend, frontend e infraestrutura:
 
-- 📊 Listagem de racks cadastrados
-- 🔍 Visualização de equipamentos por rack
-- 📄 Exportação de dados em PDF
-- 📊 Exportação de dados em XLSX (Excel)
-- 🖥️ Interface web responsiva
-
-## 🚀 Tecnologias Utilizadas
-
-### Backend
-- **Python** com Flask
-- **SQLAlchemy** (ou outro ORM, se aplicável)
-- **OpenPyXL** ou **Pandas** para exportação XLSX
-- **ReportLab** ou **WeasyPrint** para exportação PDF
-
-### Frontend
-- **React.js**
-- **Axios** para consumo da API
-- **Bootstrap** ou outro framework CSS
-
-## 📦 Instalação e Configuração
-
-### Pré-requisitos
-- Python 3.8+
-- Node.js 14+
-- pip (gerenciador de pacotes Python)
-- npm ou yarn (gerenciador de pacotes Node)
-
-### 1. Clone o repositório
-```bash
-git clone https://github.com/seu-usuario/rack-table-filter.git
-cd rack-table-filter
-2. Configure o Backend (Flask)
-Crie e ative o ambiente virtual:
-bash
-# Linux/Mac
-python -m venv venv
-source venv/bin/activate
-
-# Windows
-python -m venv venv
-venv\Scripts\activate
-Instale as dependências Python:
-bash
-pip install -r requirements.txt
-Execute a API:
-bash
-python app.py
-A API estará disponível em: http://localhost:5000
-
-3. Configure o Frontend (React)
-Navegue para a pasta do frontend:
-bash
-cd frontend
-Instale as dependências:
-bash
-npm install
-# ou
-yarn install
-Execute a aplicação React:
-bash
-npm start
-# ou
-yarn start
-O frontend estará disponível em: http://localhost:3000
-
-🎯 Como Usar
-Acesse a aplicação no navegador
-
-Visualize os racks cadastrados
-
-Clique em um rack para ver seus equipamentos
-
-Use os botões de exportação para gerar relatórios:
-
-📄 PDF para documentação impressa
-
-📊 XLSX para análise de dados
-
-🔌 API Endpoints
-Método	Endpoint	Descrição
-GET	/api/racks	Lista todos os racks
-GET	/api/racks/<id>	Detalhes de um rack específico
-GET	/api/racks/<id>/equipments	Equipamentos de um rack
-GET	/api/export/pdf	Exporta dados em PDF
-GET	/api/export/xlsx	Exporta dados em XLSX
-🛠️ Desenvolvimento
-Para adicionar novas dependências Python:
-bash
-pip install <pacote>
-pip freeze > requirements.txt
-Para adicionar novas dependências React:
-bash
-cd frontend
-npm install <pacote>
-📝 Licença
-Este projeto está sob licença MIT. Veja o arquivo LICENSE para mais detalhes.
-
-👥 Autores
-Seu Nome
+```text
+rack-table-export/
+├── backend/                 # API desenvolvida em Flask
+│   ├── src/                 # Código fonte da aplicação
+│   │   ├── routes/          # Endpoints da API (racks.py, exports.py, etc.)
+│   │   ├── utils/           # Lógicas de negócio (pdf_utils.py, database.py)
+│   │   └── app.py           # Ponto de entrada da API
+│   ├── Dockerfile           # Configuração do container Python
+│   └── requirements.txt     # Dependências do backend
+│
+├── frontend/                # Interface desenvolvida em React
+│   ├── public/              # Arquivos estáticos
+│   ├── src/                 # Componentes e páginas React
+│   ├── Dockerfile           # Configuração do container Node/React
+│   ├── nginx.conf           # Servidor web para produção
+│   └── package.json         # Dependências do frontend
+│
+├── docker-compose.yml       # Orquestração global dos containers
+├── .env.example             # Template de variáveis de ambiente
+└── README.md                # Documentação
+✨ Funcionalidades📊 Listagem de racks cadastrados: Visão geral rápida do Data Center.🔍 Visualização detalhada: Mapeamento visual e listagem de equipamentos por rack (com tamanho em U).📄 Exportação em PDF: Geração de Ficha Técnica completa pronta para impressão.📊 Exportação em XLSX: Extração de dados tabulares para o Excel.🖥️ Interface Responsiva: Navegação fluida e limpa.🚀 Tecnologias UtilizadasO projeto foi construído com as seguintes tecnologias:Backend (API)Python com FlaskExtração de dados avançada com consultas SQLGeração de relatórios com exportação nativa para PDF e XLSXFrontend (Interface)React.jsAxios para consumo da API RESTRenderização dinâmica e responsiva com CSS personalizadoInfraestrutura & DevOpsDocker & Docker Compose para padronização do ambiente e isolamento de dependênciasNginx configurado para servir a aplicação React em produção📦 Como rodar o projeto localmenteA aplicação foi 100% conteinerizada para garantir que o ambiente de desenvolvimento seja idêntico ao de produção, eliminando problemas de configuração de máquina.Pré-requisitos:Ter o Docker e o Docker Compose instalados.Passo a passo:Clone o repositório:Bashgit clone [https://github.com/BRdeSC/rack-table-export.git](https://github.com/BRdeSC/rack-table-export.git)
+cd rack-table-export
+Configure as variáveis de ambiente:Crie um arquivo .env na raiz do projeto baseado no .env.example e preencha com as credenciais do seu banco de dados.Suba os containers com o Docker:Bashdocker compose up --build -d
+A aplicação estará disponível instantaneamente nos seguintes endereços:Frontend (Interface): http://localhost:3000Backend (API): http://localhost:5000🔌 API EndpointsAbaixo estão as principais rotas consumidas pelo frontend:MétodoEndpointDescriçãoGET/api/racksLista todos os racksGET/api/racks/<id>Detalhes de um rack específicoGET/api/racks/<id>/equipmentsRetorna os equipamentos atrelados ao rackGET/api/export/pdfRota para exportação do relatório em PDFGET/api/export/xlsxRota para exportação da planilha em XLSX📝 LicençaEste projeto está sob licença MIT.👥 AutorBruno de Souza Castro Desenvolvedor Full Stack
 
 🤝 Contribuição
 Contribuições são sempre bem-vindas! Por favor, leia as diretrizes de contribuição antes de enviar um pull request.
